@@ -618,7 +618,6 @@ thr1_value=50
 thr_place=41
 thr1_place=281
 for i in range(len(total_point)):
-    print("start")
     #空集合不分群
     if total_point[i]==[None]:
         for n in range(0, cluster_num):
