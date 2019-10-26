@@ -568,9 +568,9 @@ for g in range(0,b):# 每一行
            # print(thresh1[mid][g])
     total_point.append(point)
 #若該行紀錄點為空集合，則將其補上None
-for i in range(0,np.size(total_point)):
-    if total_point[i]==[]:
-        total_point[i]=[None]
+for i in range(0, np.size(total_point)):
+    if total_point[i] == []:
+        total_point[i] = [None]
 
 
 book = xlwt.Workbook()
