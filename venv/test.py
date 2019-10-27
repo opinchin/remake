@@ -8,6 +8,7 @@ from scipy.signal import argrelextrema
 import pickle
 import xlwt
 from tempfile import TemporaryFile
+import Gui_define
 '''
 # Read the image and create a blank mask
 img = cv2.imread('1.jpg')
@@ -512,7 +513,28 @@ gray= cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
 kernel = np.ones((5,5),np.uint8)
 gray = cv2.morphologyEx(gray, cv2.MORPH_OPEN, kernel)
-ret,thresh1 = cv2.threshold(gray,200,255,cv2.THRESH_BINARY)
+
+ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
+cv2.imwrite("THR.jpg", thresh)
+# 各行的紀錄點位置
+total_pos = []
+for i in range(0, b):
+    pos = []  # 紀錄該行的pixel值
+    for j in range(0, a):  # 每一列
+        pos.append(thresh[j, i])
+    add_none = []  # 欲添加於Total_pos 之 List
+    try:
+        [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
+        temp = [round((k1[i]+k2[i]-1)/2) for i in range(len(k1))]
+        total_pos.append(temp)
+    except UnboundLocalError:
+        total_pos.append(add_none)
+# 若該行紀錄點為空集合，則將其補上None
+for i in range(0, np.size(total_pos)):
+    if not total_pos[i]:
+        total_pos[i] = [None]
+# 將每一行位置儲存至Excel分頁一
+'''
 cv2.imshow("Origin Picture",thresh1)
 #cv2.imwrite("ggg.jpg",thresh1)
 cv2.waitKey()
@@ -571,44 +593,42 @@ for g in range(0,b):# 每一行
 for i in range(0, np.size(total_point)):
     if total_point[i] == []:
         total_point[i] = [None]
-
-
+'''
 book = xlwt.Workbook()
 sheet1 = book.add_sheet('sheet1')
-
-for i,e in enumerate(total_point):
-    sheet1.write(i,0,str(total_point[i]))
-
-name = "random2.xls"
+for i, e in enumerate(total_pos):
+    sheet1.write(i, 0, str(total_pos[i]))
+name = "new_data.xls"
 book.save(name)
 book.save(TemporaryFile())
+
 
 cluster_num=0
 pre_cluster_num=0
 #取出所有記錄點結果之數量的最大值
-for i in range(len(total_point)):
-    a=len(total_point[i])
+for i in range(len(total_pos)):
+    a=len(total_pos[i])
     if a>cluster_num:
         count=0
-        for j in range(len(total_point)):
+        for j in range(len(total_pos)):
            # a = len(total_point[j])
-            if a == len(total_point[j]):
+            if a == len(total_pos[j]):
                 count = count + 1
-        if count < len(total_point) / 10:
+        if count < len(total_pos) / 10:
             cluster_num=pre_cluster_num
         else:
             pre_cluster_num=a
             cluster_num=a
-print(cluster_num)
+print("分成", cluster_num, "類")
 
 #分群對應值 與 分群參考點 之初始化
-total_cluster=[]
+total_cluster = []
 pre_locate = []
 for i in range(0,cluster_num):
     total_cluster.append([])
     pre_locate.append([""])
-#將每一行記錄點再次分群，目的是將每一條線條歸類為獨立分群，是為分群對應值，並且對應圖表上的原始資料，可作圖
-#3/22 成功分群
+# 將每一行記錄點再次分群，目的是將每一條線條歸類為獨立分群，是為分群對應值，並且對應圖表上的原始資料，可作圖
+# 3/22 成功分群
 cluster_count=0
 clustered=False
 gg=0
@@ -617,9 +637,9 @@ thr_value=110
 thr1_value=50
 thr_place=41
 thr1_place=281
-for i in range(len(total_point)):
+for i in range(len(total_pos)):
     #空集合不分群
-    if total_point[i]==[None]:
+    if total_pos[i]==[None]:
         for n in range(0, cluster_num):
             total_cluster[n].append("")
     #進入分群判別
@@ -627,14 +647,15 @@ for i in range(len(total_point)):
         count = 0
         check_list = []
 
-        if len(total_point[i])==cluster_num:
+        if len(total_pos[i])==cluster_num:
         #假如該行紀錄點剛好等於總分群數，則直接照順序歸類
-            for j in total_point[i]:
+            for j in total_pos[i]:
                 if j == thr_place:  # 調整基準對應值
                     value = thr_value
                 else:  # 將每一行的資訊做分群
-                    value = round(thr_value - (abs(((thr_value-thr1_value))) / abs((thr1_place-thr_place)) * (j - thr_place)))
-                if clustered: #如果歸類過，則不能直接順序排列，需要比較參考點距離
+                    value = round(thr_value - (abs((thr_value - thr1_value)) / abs((thr1_place - thr_place)) *
+                                               (j - thr_place)))
+                if clustered: # 如果歸類過，則不能直接順序排列，需要比較參考點距離
                     dist_list = []
                     for m in range(0,cluster_num):
                         try:
@@ -689,7 +710,7 @@ for i in range(len(total_point)):
                         total_cluster[count].append(value)
                         pre_locate[count]=j
                         count=count+1
-        elif len(total_point[i])>cluster_num:
+        elif len(total_pos[i])>cluster_num:
         # 假如該行紀錄點大於總分群數，則忽略排序
             for n in range(0, cluster_num):
                 total_cluster[n].append("")
@@ -698,11 +719,11 @@ for i in range(len(total_point)):
             #假如否，則需比較分群參考點
             check_list=[]
             #若某一分群無紀錄點，則將該列的分群補上空集合
-            for j in total_point[i]:
+            for j in total_pos[i]:
                 if j == thr_place:  # 調整基準對應值
                     value = thr_value
                 else:  # 將每一行的資訊做分群
-                    value =   value = round(thr_value - (abs(((thr_value-thr1_value))) / abs((thr1_place-thr_place)) * (j - thr_place)))
+                    value  = round(thr_value - (abs(((thr_value-thr1_value))) / abs((thr1_place-thr_place)) * (j - thr_place)))
                    # value = round(120 - (110 / 384) * (j - thr_place))
                 dist_list = []
                 #dist_list紀錄該行每一記錄點與分群參考點的差值
@@ -745,7 +766,6 @@ for i in range(len(total_point)):
                             total_cluster[place].append(value)
                             pre_locate[place] = j
                             check_list.append(place)
-
                 except:
                     #假如抱錯 則表示完全沒有參考點，直接定義第一個參考點
                     #place = dist_list.index(min(a for a in dist_list if isinstance))
@@ -766,9 +786,6 @@ for i in range(len(total_point)):
                         pass
                 except:
                     total_cluster[l].append("")
-
-
-
         '''
         for j in total_point[i]:
             if j == 62:  # 調整基準對應值
@@ -801,7 +818,6 @@ for i in range(len(total_point)):
                 total_cluster[i].append("")
         check_list = []
 '''
-
         '''3/21未完成
             find_cluster = []
             for k in range(0,cluster_num):
@@ -832,13 +848,6 @@ for i in range(len(total_point)):
                 pre_locate[count][0]=j
                 count=count+1
                 '''
-
-
-
-
-
-
-
 #book = xlwt.Workbook()
 sheet2 = book.add_sheet('sheet2')
 
@@ -846,7 +855,7 @@ for k in range(0,cluster_num):
     for i,e in enumerate(total_cluster[k]):
         sheet2.write(i,k,str(total_cluster[k][i]))
 
-name = "random2.xls"
+name = "new_data.xls"
 book.save(name)
 book.save(TemporaryFile())
 
