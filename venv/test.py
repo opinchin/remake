@@ -502,7 +502,8 @@ tracing_line(img,coordinate)
 '''
 #分群
 img = cv2.imread("Grid_removed (2).jpg")
-hsv= cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
+image = img.copy()
+hsv = cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
 #img = cv2.medianBlur(img,3)
 [a,b,c] = np.shape(img)#a=420 b=959,c=3
 #img = cv2.medianBlur(img,3)
@@ -515,7 +516,7 @@ kernel = np.ones((5,5),np.uint8)
 gray = cv2.morphologyEx(gray, cv2.MORPH_OPEN, kernel)
 
 ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
-cv2.imwrite("THR.jpg", thresh)
+# cv2.imwrite("THR.jpg", thresh)
 # 各行的紀錄點位置
 total_pos = []
 for i in range(0, b):
@@ -527,8 +528,13 @@ for i in range(0, b):
         [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
         temp = [round((k1[i]+k2[i]-1)/2) for i in range(len(k1))]
         total_pos.append(temp)
+        for k in temp:
+            print(k)
+            image[k-10:k+10, i, :] = 50
     except UnboundLocalError:
         total_pos.append(add_none)
+cv2.imshow("00", image)
+cv2.waitKey()
 # 若該行紀錄點為空集合，則將其補上None
 for i in range(0, np.size(total_pos)):
     if not total_pos[i]:
@@ -621,7 +627,7 @@ for i in range(len(total_pos)):
             cluster_num=a
 print("分成", cluster_num, "類")
 
-#分群對應值 與 分群參考點 之初始化
+# 分群對應值 與 分群參考點 之初始化
 total_cluster = []
 pre_locate = []
 for i in range(0,cluster_num):
