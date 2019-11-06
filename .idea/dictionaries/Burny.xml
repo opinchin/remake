@@ -5,10 +5,12 @@
       <w>checklabel</w>
       <w>checklegend</w>
       <w>closeimg</w>
+      <w>colordist</w>
       <w>countall</w>
       <w>dataregion</w>
       <w>padx</w>
       <w>pady</w>
+      <w>rmean</w>
     </words>
   </dictionary>
 </component>

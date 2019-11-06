@@ -5,9 +5,13 @@ from matplotlib import pyplot as plt
 import xlwt
 from tempfile import TemporaryFile
 img = cv2.imread("Grid_removed (2).jpg")
+
 [a, b, c] = np.shape(img)  # a=484 b=996,c=3
 kernel = np.ones((5, 5), np.uint8)
-opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+blur = cv2.blur(img, (3,3))
+opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)
+cv2.imwrite("blurop.jpg", opening)
+lab_img = cv2.cvtColor(opening, cv2.COLOR_BGR2LAB)
 hsv_img = cv2.cvtColor(opening, cv2.COLOR_BGR2HSV)
 gray = cv2.cvtColor(opening, cv2.COLOR_BGR2GRAY)
 ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
@@ -34,8 +38,12 @@ sheet1 = book.add_sheet('sheet1')
 for i, e in enumerate(total_pos):
     sheet1.write(i, 0, str(total_pos[i]))
 name = "new_data.xls"
-book.save(name)
-book.save(TemporaryFile())
+try:
+    book.save(name)
+    book.save(TemporaryFile())
+except PermissionError:
+    print("請關閉Excel後存檔")
+    pass
 
 cluster_num = 0
 pre_cluster_num = 0
@@ -57,38 +65,80 @@ print("分成", cluster_num, "類")
 # 分群對應值 與 分群參考點 之初始化
 total_cluster = []
 pre_locate = []
-hsv_define = []
-for i in range(0,cluster_num):
+color_define = []
+for i in range(0, cluster_num):
     total_cluster.append([])
     pre_locate.append([""])
-    hsv_define.append([])
+    color_define.append([])
 # 將每一行記錄點再次分群，目的是將每一條線條歸類為獨立分群，是為分群對應值，並且對應圖表上的原始資料，可作圖
 thr_value = 110
 thr1_value = 50
 thr_place = 41
 thr1_place = 281
 y_place = 0
+clustered = False
+
+
+def place_to_value(place):
+    if place == thr_place:
+        value = thr_value
+    else:
+        value = round(thr_value - (abs((thr_value - thr1_value)) /
+                                   abs((thr1_place - thr_place)) * (j - thr_place)))
+    return value
+
+
 for i in range(len(total_pos)):
     # 空集合不分群
     if total_pos[i] == [None]:
         for n in range(0, cluster_num):
             total_cluster[n].append("")
-    # 進入分群閥值定義
+    # 第一次進入分群閥值定義
     else:
-        if len(total_pos[i]) == cluster_num:
-            # 假如該行紀錄點剛好等於總分群數，則直接定義分群HSV閥值
-            count = 0
-            for j in total_pos[i]:
-                if j == thr_place:  # 調整基準對應值
-                    value = thr_value
-                else:  # 將每一行的資訊做分群
-                    value = round(thr_value - (abs((thr_value - thr1_value)) / abs((thr1_place - thr_place)) *
-                                               (j - thr_place)))
-                hsv_define[count] = (hsv_img[j, i])
-                print(count, j)
-                count = count+1
-            print(hsv_define)
-            break
+        count = 0
+        if len(total_pos[i]) == cluster_num:  # 假如該行紀錄點數量剛好等於總分群數
+            if not clustered:  # 未歸類初始化，則直接定義參考值。
+                for j in total_pos[i]:
+                    value = place_to_value(j)
+                    color_define[count] = (opening[j, i])
+                    print(count, j)
+                    pre_locate[count] = j
+                    total_cluster[count].append(value)
+                    count = count+1
+                clustered = True
+                print("已定義初始位置於", i, "行的", pre_locate, "座標")
+                break
+            else:  # 已歸類參考點。
+                pass
+        elif len(total_pos[i]) < cluster_num:  # 假如該行紀錄點數量小於總分群數
+            if not clustered:
+                pass
+            else:
+                pass
+        else:  # 假如該行紀錄點大於總分群數
+            if not clustered:
+                pass
+            else:
+                pass
+
+
+def colordist(rgb_1, rgb_2):
+    r_1, g_1, b_1 = rgb_1
+    r_2, g_2, b_2 = rgb_2
+    r_1 = float(r_1)
+    g_1 = float(g_1)
+    b_1 = float(b_1)
+    r_2 = float(r_2)
+    g_2 = float(g_2)
+    b_2 = float(b_2)
+    rmean = (r_1 + r_2) / 2
+    r = r_1 - r_2
+    g = g_1 - g_2
+    bl = b_1 - b_2
+    return np.sqrt((2 + rmean / 256) * (r ** 2) + 4 * (g ** 2) + (2 + (255 - rmean) / 256) * (bl ** 2))
+
+
+# print(colordist(opening[281, 99], opening[280, 100]))
 
 
 
