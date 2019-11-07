@@ -673,7 +673,6 @@ for i in range(len(total_pos)):
                     if min(a for a in dist_list if isinstance) > 10:
                         if cluster_count >= cluster_num:
                             pass
-
                         else:
                             try:
                                 if check_list.index(place):

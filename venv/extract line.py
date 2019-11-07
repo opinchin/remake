@@ -65,11 +65,11 @@ print("分成", cluster_num, "類")
 # 分群對應值 與 分群參考點 之初始化
 total_cluster = []
 pre_locate = []
-color_define = []
+pre_color = []
 for i in range(0, cluster_num):
     total_cluster.append([])
     pre_locate.append([""])
-    color_define.append([])
+    pre_color.append([])
 # 將每一行記錄點再次分群，目的是將每一條線條歸類為獨立分群，是為分群對應值，並且對應圖表上的原始資料，可作圖
 thr_value = 110
 thr1_value = 50
@@ -77,6 +77,7 @@ thr_place = 41
 thr1_place = 281
 y_place = 0
 clustered = False
+cluster_count = 1
 
 
 def place_to_value(place):
@@ -88,6 +89,22 @@ def place_to_value(place):
     return value
 
 
+def colordist(rgb_1, rgb_2):
+    r_1, g_1, b_1 = rgb_1
+    r_2, g_2, b_2 = rgb_2
+    r_1 = float(r_1)
+    g_1 = float(g_1)
+    b_1 = float(b_1)
+    r_2 = float(r_2)
+    g_2 = float(g_2)
+    b_2 = float(b_2)
+    rmean = (r_1 + r_2) / 2
+    r = r_1 - r_2
+    g = g_1 - g_2
+    bl = b_1 - b_2
+    return np.sqrt((2 + rmean / 256) * (r ** 2) + 4 * (g ** 2) + (2 + (255 - rmean) / 256) * (bl ** 2))
+
+
 for i in range(len(total_pos)):
     # 空集合不分群
     if total_pos[i] == [None]:
@@ -95,31 +112,68 @@ for i in range(len(total_pos)):
             total_cluster[n].append("")
     # 第一次進入分群閥值定義
     else:
-        count = 0
+        check_list = [] # 該行確認是否有已排序的類別
+        if cluster_count == cluster_num+1:
+            clustered = True
         if len(total_pos[i]) == cluster_num:  # 假如該行紀錄點數量剛好等於總分群數
-            if not clustered:  # 未歸類初始化，則直接定義參考值。
-                for j in total_pos[i]:
-                    value = place_to_value(j)
-                    color_define[count] = (opening[j, i])
-                    print(count, j)
-                    pre_locate[count] = j
-                    total_cluster[count].append(value)
-                    count = count+1
-                clustered = True
-                print("已定義初始位置於", i, "行的", pre_locate, "座標")
-                break
-            else:  # 已歸類參考點。
-                pass
+            for j in total_pos[i]:
+                value = place_to_value(j)
+                if not clustered:  # 未歸類初始化，則直接定義參考值。
+                    pre_color[cluster_count-1] = opening[j, i]
+                    pre_locate[cluster_count-1] = j
+                    total_cluster[cluster_count-1].append(value)
+                    print("已定義類別", cluster_count, "初始位置於", i, "行的", pre_locate[cluster_count-1], "座標")
+                    cluster_count = cluster_count+1
+
+                else:  # 已歸類參考點。
+                    dist_list = []  # 統計各距離
+                    for m in range(0, cluster_num):
+                        try:
+                            dist = abs(pre_locate[m] - j)
+                            dist_list.append(dist)
+                        except:
+                            dist_list.append([])
+                   #  place = dist_list.index(min(a for a in dist_list if isinstance))
+                    for a, element in enumerate(dist_list):
+                        # 找尋dist小且顏色距離小的值。
+                        if element < 10:
+                            place = dist_list.index(element)
+                            if colordist(pre_color[place], opening[j, i]) < 50:
+                                pre_color[place] = opening[j, i]
+                                total_cluster[place].append(value)
+                                check_list.append(place)
+                                pre_locate[place] = j
+                            else:
+                                # 有未分類的值
+                                pass
+                        else:
+                            pass
+                    '''
+                        place = dist_list.index(min(a for a in dist_list if isinstance))
+                        if colordist(pre_color[place], opening[j, i]) < 50:
+                            pre_color[place] = opening[j, i]
+                            total_cluster[place].append(value)
+                            check_list.append(place)
+                            pre_locate[place] = j
+                            
+
+                    else:
+                        print("Error")
+'''
         elif len(total_pos[i]) < cluster_num:  # 假如該行紀錄點數量小於總分群數
-            if not clustered:
-                pass
-            else:
-                pass
+            for j in total_pos[i]:
+                value = place_to_value(j)
+                if not clustered:
+                    pass
+                else:
+                    pass
         else:  # 假如該行紀錄點大於總分群數
-            if not clustered:
-                pass
-            else:
-                pass
+            for j in total_pos[i]:
+                value = place_to_value(j)
+                if not clustered:
+                    pass
+                else:
+                    pass
 
 
 def colordist(rgb_1, rgb_2):
