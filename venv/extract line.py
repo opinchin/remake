@@ -114,7 +114,8 @@ for i in range(len(total_pos)):
     else:
         check_list = [] # 該行確認是否有已排序的類別
         if cluster_count == cluster_num+1:
-            clustered = True
+            print(locate)
+            break
         if len(total_pos[i]) == cluster_num:  # 假如該行紀錄點數量剛好等於總分群數
             for j in total_pos[i]:
                 value = place_to_value(j)
@@ -124,8 +125,10 @@ for i in range(len(total_pos)):
                     total_cluster[cluster_count-1].append(value)
                     print("已定義類別", cluster_count, "初始位置於", i, "行的", pre_locate[cluster_count-1], "座標")
                     cluster_count = cluster_count+1
+                    locate = i
 
                 else:  # 已歸類參考點。
+                    '''
                     dist_list = []  # 統計各距離
                     for m in range(0, cluster_num):
                         try:
@@ -143,11 +146,8 @@ for i in range(len(total_pos)):
                                 total_cluster[place].append(value)
                                 check_list.append(place)
                                 pre_locate[place] = j
-                            else:
-                                # 有未分類的值
-                                pass
-                        else:
-                            pass
+                                '''
+
                     '''
                         place = dist_list.index(min(a for a in dist_list if isinstance))
                         if colordist(pre_color[place], opening[j, i]) < 50:
@@ -164,7 +164,8 @@ for i in range(len(total_pos)):
             for j in total_pos[i]:
                 value = place_to_value(j)
                 if not clustered:
-                    pass
+                    for n in range(0, cluster_num):
+                        total_cluster[n].append("")
                 else:
                     pass
         else:  # 假如該行紀錄點大於總分群數
@@ -176,24 +177,45 @@ for i in range(len(total_pos)):
                     pass
 
 
-def colordist(rgb_1, rgb_2):
-    r_1, g_1, b_1 = rgb_1
-    r_2, g_2, b_2 = rgb_2
-    r_1 = float(r_1)
-    g_1 = float(g_1)
-    b_1 = float(b_1)
-    r_2 = float(r_2)
-    g_2 = float(g_2)
-    b_2 = float(b_2)
-    rmean = (r_1 + r_2) / 2
-    r = r_1 - r_2
-    g = g_1 - g_2
-    bl = b_1 - b_2
-    return np.sqrt((2 + rmean / 256) * (r ** 2) + 4 * (g ** 2) + (2 + (255 - rmean) / 256) * (bl ** 2))
+for i in range(locate+1, len(total_pos)):
+    if total_pos[i] == [None]:
+        for n in range(0, cluster_num):
+            total_cluster[n].append("")
+    else:
+        for j in total_pos[i]:
+            check_list = []
+            dist_list = []
+            color_dist_list = []
+            value = place_to_value(j)
+            for k in range(0,cluster_num):
+                dist = abs(pre_locate[k] - j)
+                color_dist = colordist(pre_color[k], opening[j, i])
+                dist_list.append(dist)
+                color_dist_list.append(color_dist)
+            for a, element in enumerate(dist_list):
+                if element < 10:
+                    place = dist_list.index(element)
+                    try:
+                        if check_list.index(place):
+                            print("有重疊的值，於座標(", j, i, ")")
+                    except ValueError:
+                        if color_dist_list[place] < 100:
+                            check_list.append(place)
+                            #pre_color[place] = opening[j, i]
+                            pre_locate[place] = j
+                            total_cluster[place].append(value)
+                            check_list.append(place)
 
 
-# print(colordist(opening[281, 99], opening[280, 100]))
-
-
-
+sheet2 = book.add_sheet('sheet2')
+for k in range(0,cluster_num):
+    for i,e in enumerate(total_cluster[k]):
+        sheet2.write(i,k,str(total_cluster[k][i]))
+name = "new_data.xls"
+try:
+    book.save(name)
+    book.save(TemporaryFile())
+except PermissionError:
+    print("請關閉Excel後存檔")
+    pass
 
