@@ -7,9 +7,10 @@ from tempfile import TemporaryFile
 img = cv2.imread("Grid_removed (2).jpg")
 
 [a, b, c] = np.shape(img)  # a=484 b=996,c=3
-kernel = np.ones((5, 5), np.uint8)
-blur = cv2.blur(img, (3,3))
-opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)
+kernel = np.ones((3, 3), np.uint8)
+#blur = cv2.medianBlur(img, 3)
+blur = cv2.blur(img, (3, 3))
+opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)  # BGR
 cv2.imwrite("blurop.jpg", opening)
 lab_img = cv2.cvtColor(opening, cv2.COLOR_BGR2LAB)
 hsv_img = cv2.cvtColor(opening, cv2.COLOR_BGR2HSV)
@@ -90,8 +91,8 @@ def place_to_value(place):
 
 
 def colordist(rgb_1, rgb_2):
-    r_1, g_1, b_1 = rgb_1
-    r_2, g_2, b_2 = rgb_2
+    b_1, g_1, r_1 = rgb_1
+    b_2, g_2, r_2 = rgb_2
     r_1 = float(r_1)
     g_1 = float(g_1)
     b_1 = float(b_1)
@@ -112,9 +113,8 @@ for i in range(len(total_pos)):
             total_cluster[n].append("")
     # 第一次進入分群閥值定義
     else:
-        check_list = [] # 該行確認是否有已排序的類別
+        #check_list = []  # 該行確認是否有已排序的類別
         if cluster_count == cluster_num+1:
-            print(locate)
             break
         if len(total_pos[i]) == cluster_num:  # 假如該行紀錄點數量剛好等於總分群數
             for j in total_pos[i]:
@@ -126,8 +126,8 @@ for i in range(len(total_pos)):
                     print("已定義類別", cluster_count, "初始位置於", i, "行的", pre_locate[cluster_count-1], "座標")
                     cluster_count = cluster_count+1
                     locate = i
-
                 else:  # 已歸類參考點。
+                    pass
                     '''
                     dist_list = []  # 統計各距離
                     for m in range(0, cluster_num):
@@ -161,11 +161,13 @@ for i in range(len(total_pos)):
                         print("Error")
 '''
         elif len(total_pos[i]) < cluster_num:  # 假如該行紀錄點數量小於總分群數
+            for n in range(0, cluster_num):
+                total_cluster[n].append("")
+                continue
             for j in total_pos[i]:
                 value = place_to_value(j)
                 if not clustered:
-                    for n in range(0, cluster_num):
-                        total_cluster[n].append("")
+                    pass
                 else:
                     pass
         else:  # 假如該行紀錄點大於總分群數
@@ -176,14 +178,14 @@ for i in range(len(total_pos)):
                 else:
                     pass
 
-
+#for i in range(locate+1, 141):
 for i in range(locate+1, len(total_pos)):
     if total_pos[i] == [None]:
         for n in range(0, cluster_num):
             total_cluster[n].append("")
     else:
+        check_list = []
         for j in total_pos[i]:
-            check_list = []
             dist_list = []
             color_dist_list = []
             value = place_to_value(j)
@@ -193,24 +195,37 @@ for i in range(locate+1, len(total_pos)):
                 dist_list.append(dist)
                 color_dist_list.append(color_dist)
             for a, element in enumerate(dist_list):
-                if element < 10:
+                if element < 20:
                     place = dist_list.index(element)
                     try:
                         if check_list.index(place):
                             print("有重疊的值，於座標(", j, i, ")")
                     except ValueError:
-                        if color_dist_list[place] < 100:
+                        if color_dist_list[place] < 250:
                             check_list.append(place)
                             #pre_color[place] = opening[j, i]
                             pre_locate[place] = j
                             total_cluster[place].append(value)
-                            check_list.append(place)
+                        else:
+                            print("未歸類的值，於座標(", j, i, ")", place)
+
+        for l in range(0, cluster_num):
+            try:
+                check_list.index(l)
+            except ValueError:
+                total_cluster[l].append("")
+
 
 
 sheet2 = book.add_sheet('sheet2')
 for k in range(0,cluster_num):
     for i,e in enumerate(total_cluster[k]):
-        sheet2.write(i,k,str(total_cluster[k][i]))
+        if type(e) == int:
+            sheet2.write(i, k, int(total_cluster[k][i]))
+        else:
+            sheet2.write(i, k, str(total_cluster[k][i]))
+
+        #sheet2.write(i,k,str(total_cluster[k][i]))
 name = "new_data.xls"
 try:
     book.save(name)
