@@ -106,6 +106,12 @@ def colordist(rgb_1, rgb_2):
     return np.sqrt((2 + rmean / 256) * (r ** 2) + 4 * (g ** 2) + (2 + (255 - rmean) / 256) * (bl ** 2))
 
 
+def labdist(lab_1, lab_2):
+    l_1, a_1, b_1 = lab_1
+    l_2, a_2, b_2 = lab_2
+    return np.sqrt((l_1-l_2)**2 + (a_1-a_2)**2 + (b_1-b_2)**2)
+
+
 for i in range(len(total_pos)):
     # 空集合不分群
     if total_pos[i] == [None]:
@@ -121,6 +127,7 @@ for i in range(len(total_pos)):
                 value = place_to_value(j)
                 if not clustered:  # 未歸類初始化，則直接定義參考值。
                     pre_color[cluster_count-1] = opening[j, i]
+                    # pre_color[cluster_count-1] = lab_img[j, i]
                     pre_locate[cluster_count-1] = j
                     total_cluster[cluster_count-1].append(value)
                     print("已定義類別", cluster_count, "初始位置於", i, "行的", pre_locate[cluster_count-1], "座標")
@@ -178,20 +185,23 @@ for i in range(len(total_pos)):
                 else:
                     pass
 
-#for i in range(locate+1, 141):
+#for i in range(locate+1, 241):
 for i in range(locate+1, len(total_pos)):
     if total_pos[i] == [None]:
         for n in range(0, cluster_num):
             total_cluster[n].append("")
     else:
         check_list = []
+        check_count = 0
         for j in total_pos[i]:
             dist_list = []
             color_dist_list = []
             value = place_to_value(j)
-            for k in range(0,cluster_num):
+            for k in range(0, cluster_num):
                 dist = abs(pre_locate[k] - j)
                 color_dist = colordist(pre_color[k], opening[j, i])
+                #color_dist = labdist(pre_color[k], lab_img[j, i])
+                #print(color_dist)
                 dist_list.append(dist)
                 color_dist_list.append(color_dist)
             for a, element in enumerate(dist_list):
@@ -201,11 +211,16 @@ for i in range(locate+1, len(total_pos)):
                         if check_list.index(place):
                             print("有重疊的值，於座標(", j, i, ")")
                     except ValueError:
-                        if color_dist_list[place] < 250:
+                        #if check_count >= len(total_pos[i]):
+
+                        if color_dist_list[place] < 150:
                             check_list.append(place)
+                            check_count = check_count+1
                             #pre_color[place] = opening[j, i]
+                            #pre_color[place] = lab_img[j, i]
                             pre_locate[place] = j
                             total_cluster[place].append(value)
+                            break
                         else:
                             print("未歸類的值，於座標(", j, i, ")", place)
 
