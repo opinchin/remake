@@ -99,6 +99,12 @@ def colordist(rgb_1, rgb_2):
     r_2 = float(r_2)
     g_2 = float(g_2)
     b_2 = float(b_2)
+    avg_1 = (b_1+ g_1 +r_1)/3
+    avg_2 = (b_2+ g_2 +r_2)/3
+    gray_1 = np.sqrt((b_1 - avg_1) ** 2 + (g_1 - avg_1) ** 2 + (r_1 - avg_1) ** 2)
+    gray_2 = np.sqrt((b_2 - avg_2) ** 2 + (g_2 - avg_2) ** 2 + (r_2 - avg_2) ** 2)
+    if abs(gray_1 - gray_2) < 3:
+        return 0
     rmean = (r_1 + r_2) / 2
     r = r_1 - r_2
     g = g_1 - g_2
