@@ -231,7 +231,6 @@ for i in range(locate+1, len(total_pos)):
                 total_cluster[l].append("")
 
 
-
 sheet2 = book.add_sheet('sheet2')
 for k in range(0,cluster_num):
     for i,e in enumerate(total_cluster[k]):
@@ -239,8 +238,7 @@ for k in range(0,cluster_num):
             sheet2.write(i, k, int(total_cluster[k][i]))
         else:
             sheet2.write(i, k, str(total_cluster[k][i]))
-
-        #sheet2.write(i,k,str(total_cluster[k][i]))
+        # sheet2.write(i,k,str(total_cluster[k][i]))
 name = "new_data.xls"
 try:
     book.save(name)
