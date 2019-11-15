@@ -13,6 +13,7 @@ import mpl_toolkits.axisartist.floating_axes as floating_axes
 
 
 def grid_space_detect(image):
+    import Gui_define
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     _, image = cv2.threshold(image, 200, 255, cv2.THRESH_BINARY)
     #cv2.imshow("Preprocessing",image)
@@ -126,10 +127,12 @@ def grid_space_detect(image):
         y_grid_space = None
         print("預測沒有Y方向網格")
 
-    return x_grid_space, y_grid_space, aa, cc, peaks, peaks1
+    return x_grid_space, y_grid_space, aa, cc,\
+           peaks, peaks1
 
 
-def remove_x_expected_grid(image, peak, acc_list,space):
+def remove_x_expected_grid(image, peak, acc_list,
+                           space):
     k = []
     row, col, _ =np.shape(image)
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -178,13 +181,14 @@ def remove_x_expected_grid(image, peak, acc_list,space):
         for j in range(0, col):
 
             try:
-                if 0<=hsv[i, j, 2] <=  5:
+                if 0<=hsv[i, j, 2] <=  255:
                     image[i, j, :] = 255
             except:
                 break
 
 
-def remove_y_expected_grid(image, peak, acc_list,space):
+def remove_y_expected_grid(image, peak, acc_list,
+                           space):
     k = []
     row, col, _ =np.shape(image)
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -218,7 +222,7 @@ def remove_y_expected_grid(image, peak, acc_list,space):
     for i in k:
         for j in range(0, row):
             try:
-                if 0<=hsv[j, i, 2] <=  5:
+                if 0 <= hsv[j, i, 2] <= 255:
                     image[j, i, :] = 255
             except:
                 break
@@ -249,10 +253,10 @@ a, b, c, d, p1, p2 = grid_space_detect(image)
 # 刪除由grid_space_detect預測之網格
 #row, col, _ = np.shape(image) #c[row+a*n] , d[col+b*n]
 if a!=None:
-    remove_x_expected_grid(result,p1,c,a)
+    remove_x_expected_grid(result, p1, c, a)
     print("已完成X方向網格刪除")
 if b!=None:
-    remove_y_expected_grid(result,p2,d,b)
+    remove_y_expected_grid(result, p2, d, b)
     print("已完成Y方向網格刪除")
 # 將符合間隔之峰值統計
 '''
@@ -292,17 +296,17 @@ if a != None:
                 result[i,j,:]=255
 
 '''
-result_1=result.copy()
+result_1 = result.copy()
 
 result_1 = cv2.cvtColor(result_1,cv2.COLOR_RGB2BGR)
-plt.subplot(223),plt.imshow(result_1,'gray'),plt.title('Grid Removed')
+plt.subplot(223),plt.imshow(result_1, 'gray'),plt.title('Grid Removed')
 result1 = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
-_, result1 = cv2.threshold(result1, 200, 255, cv2.THRESH_BINARY)
+#_, result1 = cv2.threshold(result1, 200, 255, cv2.THRESH_BINARY)
 imgg = cv2.hconcat([thr,result1])
-cv2.imshow("Thr",imgg)
+cv2.imshow("Thr",result_1)
 cv2.waitKey()
 
-plt.subplot(224),plt.imshow(result1,'gray'),plt.title('Grid Removed_Bin')
+plt.subplot(224), plt.imshow(result1, 'gray'), plt.title('Grid Removed_Bin')
 #plt.show()
 #cv2.imshow("grid_removed",reimg)
 #a, b = Gui_define.cal_each_y_accumulation(result)

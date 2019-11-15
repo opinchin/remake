@@ -212,7 +212,7 @@ for i in range(locate+1, len(total_pos)):
                 color_dist_list.append(color_dist)
             for a, element in enumerate(dist_list):
                 if element < 20:
-                    place = dist_list.index(element)
+                    place = a
                     try:
                         if check_list.index(place):
                             print("有重疊的值，於座標(", j, i, ")")

@@ -15,19 +15,22 @@ test2 = True
 test3 = True
 test4 = True
 test5 = True
-
+# global save_path
+save_path = 'C:/Users/Burny/PycharmProjects/remake/venv/output'
 # 開啟圖片
+
+
 def openfile():
     global test
     global img
     if test:
-        img=cv2.imread(fileopenbox())
+        img = cv2.imread(fileopenbox())
         cv2.namedWindow("Origin Picture")
         cv2.imshow("Origin Picture",img)
-        test=False
+        test = False
         open_close_text.set("Close Image")
 
-        #初始化
+        # 初始化
 #        hsv_count.config(state="disabled")
         checklabel.config(bg='red')
         var.set('Not Define Data Region')
@@ -41,6 +44,7 @@ def openfile():
         legend_show.config(state="disabled")
         legend_removed_show.config(state="disabled")
         grid_detect.config(state="disabled")
+        cv2.imwrite(os.path.join(save_path, 'Origin.jpg'), img)
     else:
         test=True
         cv2.destroyAllWindows()
@@ -293,8 +297,7 @@ def DR_detect():
             # origin_select.config(state="active")
             test2 = True
             # data region 存檔
-            path= 'C:/Users/Burny/PycharmProjects/remake/venv/output'
-            cv2.imwrite(os.path.join(path , 'data_region.jpg'),image_data)
+            cv2.imwrite(os.path.join(save_path, 'data_region.jpg'),image_data)
         else:
             result1 = tkinter.messagebox.askokcancel("Error", "無法自動偵測是否要自行框選")
             if result1 == True:
@@ -333,11 +336,11 @@ def dataregion_show_close():
     if test2:
         cv2.destroyWindow("DataRegion")
         # cv2.destroyWindow("ROI selector")
-        test2=False
+        test2 = False
         data_region_show.config(text="Open Data Region")
     else:
         cv2.imshow("DataRegion",image_data)
-        test2=True
+        test2 = True
         data_region_show.config(text="Close Data Region")
 
 
@@ -364,9 +367,8 @@ def legend_locate():
         legend_removed = cv2.add(image_data, mask)
         legend_removed_show.config(state="active")
         cv2.imshow("Legend Removed", legend_removed)
-        path = 'C:/Users/Burny/PycharmProjects/remake/venv/output'
-        cv2.imwrite(os.path.join(path, 'Legend.jpg'), legend)
-        cv2.imwrite(os.path.join(path, 'Legend Removed.jpg'), legend_removed)
+        cv2.imwrite(os.path.join(save_path, 'Legend.jpg'), legend)
+        cv2.imwrite(os.path.join(save_path, 'Legend Removed.jpg'), legend_removed)
         # cv2.imwrite("Legend Removed.jpg", legend_removed)
     else:
         legend_removed = image_data
@@ -417,9 +419,7 @@ def grid_detect_fun():
     checkgrid.config(bg='green')
     checkgrid_label.set('Define Grid')
     cv2.imshow("Grid_removed", grid_removed)
-    path = 'C:/Users/Burny/PycharmProjects/remake/venv/output'
-    cv2.imwrite(os.path.join(path, 'Grid_removed.jpg'), grid_removed)
-    #cv2.waitKey()
+    cv2.imwrite(os.path.join(save_path, 'Grid_removed.jpg'), grid_removed)
 
 
 def grid_removed_show_close_fun():

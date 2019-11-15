@@ -1,6 +1,7 @@
 <component name="ProjectDictionaryState">
   <dictionary name="Burny">
     <words>
+      <w>burny</w>
       <w>checkgrid</w>
       <w>checklabel</w>
       <w>checklegend</w>
@@ -11,6 +12,7 @@
       <w>padx</w>
       <w>pady</w>
       <w>rmean</w>
+      <w>venv</w>
     </words>
   </dictionary>
 </component>
