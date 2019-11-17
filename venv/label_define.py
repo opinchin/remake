@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import scipy.signal
+import pytesseract
 
 
 def grid_space_detect(image):
@@ -135,7 +136,7 @@ def dataregion_detect(img):
         if abs(list[i] - max(list)) < 10:
             target = i
             break
-    y_label_bound = target
+    left_bound = target
     # X軸
     image_data = img[:, target:b]
     # 由右至左找尋有無右邊界
@@ -143,9 +144,11 @@ def dataregion_detect(img):
         if abs(list[i] - max(list)) < 10:
             target1 = i
             break
+
     # Check
     if target1 > 0.8 * b:
         image_data = image_data[:, 0:target1 - target]
+        right_bound = target1
     # 統計每一列
     list = []
     for i in range(0, a):
@@ -159,7 +162,7 @@ def dataregion_detect(img):
         if abs(list[i - 1] - max(list)) < 10:
             target = i
             break
-    x_label_bound = target
+    down_bound = target
     # Y軸
     image_data = image_data[0:target, :]
     # 由上至下找尋有無上邊界
@@ -167,26 +170,33 @@ def dataregion_detect(img):
         if abs(list[i] - max(list)) < 10:
             target1 = i
             break
+
     # Check
     if target1 < 0.9 * a:
         image_data = image_data[target1:target, :]
+        up_bound = target1
     else:
         print("找不到上邊界")
     # cv2.imshow("DataRegion", image_data)
-    return x_label_bound, y_label_bound
+    return up_bound, down_bound, left_bound, right_bound
 
 
 img = cv2.imread("ult_image.png")
 legend_remove = cv2.imread("Legend Removed_ult.jpg")
 row, col, _ = np.shape(img)
-x, y = dataregion_detect(img)
-print(x, y)
-x_label = img[x:row, :]
-y_label = img[:, 0:y]
+up_bound, down_bound, left_bound, right_bound = dataregion_detect(img)
+# print(x, y)
+x_label = img[down_bound:row, :]
+y_label = img[:, 0:left_bound]
+x_label_fix = x_label[:, left_bound:right_bound]
+y_label_fix = y_label[up_bound:down_bound, :]
 grid = True
 x_grid_space, y_grid_space, aa, cc, peaks, peaks1 = grid_space_detect(legend_remove)
 if grid:
-    pass
+    print(np.shape(x_label_fix))
+    print(np.shape(y_label_fix))
+    # text = pytesseract.image_to_string(x_label, lang='engB',  config='--psm 6 --oem 1')
+    # print(text)
 else:
     pass
 
