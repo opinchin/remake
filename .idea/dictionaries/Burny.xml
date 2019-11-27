@@ -5,13 +5,19 @@
       <w>checkgrid</w>
       <w>checklabel</w>
       <w>checklegend</w>
+      <w>checkvalue</w>
       <w>closeimg</w>
       <w>colordist</w>
       <w>countall</w>
       <w>dataregion</w>
+      <w>downbound</w>
+      <w>leftbound</w>
       <w>padx</w>
       <w>pady</w>
+      <w>rightbound</w>
       <w>rmean</w>
+      <w>starttime</w>
+      <w>upbound</w>
       <w>venv</w>
     </words>
   </dictionary>

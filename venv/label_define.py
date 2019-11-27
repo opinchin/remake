@@ -14,7 +14,6 @@ def grid_space_detect(image):
     # X方向之累加值 預測Y方向之網格與否
     c, d = Gui_define.cal_each_x_accumulation(image)
 
-
     # 檢查X方向之網格線
     temp = col / 3
     # 過濾過低的累加值
@@ -64,7 +63,6 @@ def grid_space_detect(image):
         x_grid_space = None
         print("預測沒有X方向網格")
 
-
     # 檢查Y方向之網格線
     temp = row / 3
     # 過濾過低的累加值
@@ -73,8 +71,8 @@ def grid_space_detect(image):
             c[i] = 0
     # 配合find_peaks，避免忽略邊界峰值
     cc = list(c)
-    c.insert(0,0)
-    c.insert(len(c),0)
+    c.insert(0, 0)
+    c.insert(len(c), 0)
     # 找尋峰值
     peaks1, _ = scipy.signal.find_peaks(c, height=0)
     peaks1 = peaks1 - 1
@@ -192,11 +190,88 @@ x_label_fix = x_label[:, left_bound:right_bound]
 y_label_fix = y_label[up_bound:down_bound, :]
 grid = True
 x_grid_space, y_grid_space, aa, cc, peaks, peaks1 = grid_space_detect(legend_remove)
+check_value = []
+check_place = []
 if grid:
-    print(np.shape(x_label_fix))
-    print(np.shape(y_label_fix))
-    # text = pytesseract.image_to_string(x_label, lang='engB',  config='--psm 6 --oem 1')
-    # print(text)
+    text = pytesseract.image_to_string(y_label_fix, lang='engB', config='--psm 6 --oem 1')
+    out1 = pytesseract.image_to_data(y_label_fix, lang='engB', config='--psm 6 --oem 1',
+                                     output_type=pytesseract.Output.DICT)
+    num_boxes = len(out1['level'])
+    for i in range(0, num_boxes):
+        if not out1['text'][i].isdigit():
+            pass
+        else:
+            (x, y, w, h) = (out1['left'][i], out1['top'][i], out1['width'][i], out1['height'][i])
+            if abs((y + h / 2) / x_grid_space - round((y + h / 2) / x_grid_space)) < 0.1:
+                check_value.append(int(out1['text'][i]))
+                check_place.append(int(round((y + h / 2) / x_grid_space)))
+                # print("Got Label In (", x, y, ") and the Value is (", out1['text'][i],  ")")
+    check = []
+    check_place_ = []
+    find_or_not = False
+    for i in range(0, len(check_value)):
+        if find_or_not:
+            break
+        else:
+            check[:] = [abs(x - check_value[i]) for x in check_value]
+            check_place_[:] = [x - (i + 1) for x in check_place]
+            for j in range(0, len(check_value)):
+                try:
+                    check[j] = abs(check[j] / check_place_[j])
+                except ZeroDivisionError:
+                    pass
+            for j in set(check):
+                if check.count(j) > len(check_value) / 2:
+                    print("Label Define")
+                    print("")
+                    thr_value = check_value[check.index(j)]
+                    thr_place = x_grid_space*check_place[check.index(j)]
+                    check[check.index(j)] = 0
+                    thr1_value = check_value[check.index(j)]
+                    thr1_place = x_grid_space*check_place[check.index(j)]
+                    find_or_not = True
+                    break
+    print("Y軸Label參考點一:位於", thr_place, "Value = ", thr_value)
+    print("Y軸Label參考點二:位於", thr1_place, "Value = ", thr1_value)
+
+    out1 = pytesseract.image_to_data(x_label_fix, lang='engB', config='--psm 6 --oem 1',
+                                     output_type=pytesseract.Output.DICT)
+    num_boxes = len(out1['level'])
+    for i in range(0, num_boxes):
+        if not out1['text'][i].isdigit():
+            pass
+        else:
+            (x, y, w, h) = (out1['left'][i], out1['top'][i], out1['width'][i], out1['height'][i])
+            if abs((x + w / 2) / y_grid_space - round((x + w / 2) / y_grid_space)) < 0.1:
+                check_value.append(int(out1['text'][i]))
+                check_place.append(int(round((x + w / 2) / y_grid_space)))
+                # print("Got Label In (", x, y, ") and the Value is (", out1['text'][i], ")")
+    check = []
+    check_place_ = []
+    find_or_not = False
+    for i in range(0, len(check_value)):
+        if find_or_not:
+            break
+        else:
+            check[:] = [abs(x - check_value[i]) for x in check_value]
+            check_place_[:] = [x - (i + 1) for x in check_place]
+            for j in range(0, len(check_value)):
+                try:
+                    check[j] = abs(check[j] / check_place_[j])
+                except ZeroDivisionError:
+                    pass
+            for j in set(check):
+                if check.count(j) > len(check_value) / 2:
+                    print("Label Define")
+                    print("")
+                    thr_value = check_value[check.index(j)]
+                    thr_place = y_grid_space * check_place[check.index(j)]
+                    check[check.index(j)] = 0
+                    thr1_value = check_value[check.index(j)]
+                    thr1_place = y_grid_space * check_place[check.index(j)]
+                    find_or_not = True
+                    break
+    print("X軸Label參考點一:位於", thr_place, "Value = ", thr_value)
+    print("X軸Label參考點二:位於", thr1_place, "Value = ", thr1_value)
 else:
     pass
-

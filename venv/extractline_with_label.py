@@ -6,6 +6,7 @@ import xlwt
 from tempfile import TemporaryFile
 import scipy.signal
 import pytesseract
+import datetime
 
 
 def grid_space_detect(image):
@@ -183,14 +184,12 @@ def dataregion_detect(image):
     return up_bound, down_bound, left_bound, right_bound
 
 
+starttime = datetime.datetime.now()
 img = cv2.imread("Grid_removed (2).jpg")
-
 [a, b, c] = np.shape(img)  # a=484 b=996,c=3
 kernel = np.ones((3, 3), np.uint8)
-#blur = cv2.medianBlur(img, 3)
 blur = cv2.blur(img, (3, 3))
 opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)  # BGR
-cv2.imwrite("blurop.jpg", opening)
 lab_img = cv2.cvtColor(opening, cv2.COLOR_BGR2LAB)
 hsv_img = cv2.cvtColor(opening, cv2.COLOR_BGR2HSV)
 gray = cv2.cvtColor(opening, cv2.COLOR_BGR2GRAY)
@@ -204,7 +203,7 @@ for i in range(0, b):
     add_none = []  # 欲添加於Total_pos 之 List
     try:
         [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
-        temp = [round((k1[i]+k2[i]-1)/2) for i in range(len(k1))]
+        temp = [round((k1[i] + k2[i] - 1) / 2) for i in range(len(k1))]
         total_pos.append(temp)
     except UnboundLocalError:
         total_pos.append(add_none)
@@ -252,17 +251,124 @@ for i in range(0, cluster_num):
     total_cluster.append([])
     pre_locate.append([""])
     pre_color.append([])
+# Label Define
+img = cv2.imread("ult_image.png")
+legend_remove = cv2.imread("Legend Removed_ult.jpg")
+row, col, _ = np.shape(img)
+up_bound, down_bound, left_bound, right_bound = dataregion_detect(img)
+# print(x, y)
+x_label = img[down_bound:row, :]
+y_label = img[:, 0:left_bound]
+x_label_fix = x_label[:, left_bound:right_bound]
+y_label_fix = y_label[up_bound:down_bound, :]
+grid = True
+x_grid_space, y_grid_space, aa, cc, peaks, peaks1 = grid_space_detect(legend_remove)
+check_value = []
+check_place = []
+if grid:
+    text = pytesseract.image_to_string(y_label_fix, lang='engB', config='--psm 6 --oem 1')
+    out1 = pytesseract.image_to_data(y_label_fix, lang='engB', config='--psm 6 --oem 1',
+                                     output_type=pytesseract.Output.DICT)
+    num_boxes = len(out1['level'])
+    for i in range(0, num_boxes):
+        if not out1['text'][i].isdigit():
+            pass
+        else:
+            (x, y, w, h) = (out1['left'][i], out1['top'][i], out1['width'][i], out1['height'][i])
+            if abs((y + h / 2) / x_grid_space - round((y + h / 2) / x_grid_space)) < 0.1:
+                check_value.append(int(out1['text'][i]))
+                check_place.append(int(round((y + h / 2) / x_grid_space)))
+                # print("Got Label In (", x, y, ") and the Value is (", out1['text'][i],  ")")
+    check = []
+    check_place_ = []
+    find_or_not = False
+    for i in range(0, len(check_value)):
+        if find_or_not:
+            break
+        else:
+            check[:] = [abs(x - check_value[i]) for x in check_value]
+            check_place_[:] = [x - (i + 1) for x in check_place]
+            for j in range(0, len(check_value)):
+                try:
+                    check[j] = abs(check[j] / check_place_[j])
+                except ZeroDivisionError:
+                    pass
+            for j in set(check):
+                if check.count(j) > len(check_value) / 2:
+                    print("Label Define")
+                    print("")
+                    thr_value = check_value[check.index(j)]
+                    thr_place = x_grid_space*check_place[check.index(j)]
+                    check[check.index(j)] = 0
+                    thr1_value = check_value[check.index(j)]
+                    thr1_place = x_grid_space*check_place[check.index(j)]
+                    find_or_not = True
+                    break
+    y_label_place_1 = thr_place
+    y_label_value_1 = thr_value
+    y_label_place_2 = thr1_place
+    y_label_value_2 = thr1_value
+    print("Y軸Label參考點一:位於", thr_place, "Value = ", thr_value)
+    print("Y軸Label參考點二:位於", thr1_place, "Value = ", thr1_value)
 
+    out1 = pytesseract.image_to_data(x_label_fix, lang='engB', config='--psm 6 --oem 1',
+                                     output_type=pytesseract.Output.DICT)
+    num_boxes = len(out1['level'])
+    for i in range(0, num_boxes):
+        if not out1['text'][i].isdigit():
+            pass
+        else:
+            (x, y, w, h) = (out1['left'][i], out1['top'][i], out1['width'][i], out1['height'][i])
+            if abs((x + w / 2) / y_grid_space - round((x + w / 2) / y_grid_space)) < 0.1:
+                check_value.append(int(out1['text'][i]))
+                check_place.append(int(round((x + w / 2) / y_grid_space)))
+                # print("Got Label In (", x, y, ") and the Value is (", out1['text'][i], ")")
+    check = []
+    check_place_ = []
+    find_or_not = False
+    for i in range(0, len(check_value)):
+        if find_or_not:
+            break
+        else:
+            check[:] = [abs(x - check_value[i]) for x in check_value]
+            check_place_[:] = [x - (i + 1) for x in check_place]
+            for j in range(0, len(check_value)):
+                try:
+                    check[j] = abs(check[j] / check_place_[j])
+                except ZeroDivisionError:
+                    pass
+            for j in set(check):
+                if check.count(j) > len(check_value) / 2:
+                    print("Label Define")
+                    print("")
+                    thr_value = check_value[check.index(j)]
+                    thr_place = y_grid_space * check_place[check.index(j)]
+                    check[check.index(j)] = 0
+                    thr1_value = check_value[check.index(j)]
+                    thr1_place = y_grid_space * check_place[check.index(j)]
+                    find_or_not = True
+                    break
+    x_label_place_1 = thr_place
+    x_label_value_1 = thr_value
+    x_label_place_2 = thr1_place
+    x_label_value_2 = thr1_value
+    print("X軸Label參考點一:位於", x_label_place_1, "Value = ", x_label_value_1)
+    print("X軸Label參考點二:位於", x_label_place_2, "Value = ", x_label_value_2)
+else:
+    pass
+
+'''
 thr_value = 110
 thr1_value = 50
 thr_place = 41
 thr1_place = 281
-clustered = False
-cluster_count = 1
 x_label_value_1 = 10
 x_label_place_1 = 100
 x_label_value_2 = 20
 x_label_place_2 = 200
+'''
+clustered = False
+cluster_count = 1
 
 
 def place_to_value(place):
@@ -274,13 +380,22 @@ def place_to_value(place):
     return value
 
 
+def y_label_to_value(place):
+    if place == y_label_place_1:
+        value = y_label_value_1
+    else:
+        value = round(y_label_value_1 - (abs((y_label_value_1 - y_label_value_2)) /
+                                   abs((y_label_place_1 - y_label_place_2)) * (place - y_label_place_1)))
+    return np.float(value)
+
+
 def x_label_to_value(place):
     if place == x_label_place_1:
         value = x_label_value_1
     else:
         value = x_label_value_1 - (abs((x_label_value_1 - x_label_value_2)) /
-                             abs((x_label_place_1 - x_label_place_2)) * (x_label_place_1 - place))
-    return value
+                                   abs((x_label_place_1 - x_label_place_2)) * (x_label_place_1 - place))
+    return np.float(value)
 
 
 def colordist(rgb_1, rgb_2):
@@ -292,8 +407,8 @@ def colordist(rgb_1, rgb_2):
     r_2 = float(r_2)
     g_2 = float(g_2)
     b_2 = float(b_2)
-    avg_1 = (b_1 + g_1 + r_1)/3
-    avg_2 = (b_2 + g_2 + r_2)/3
+    avg_1 = (b_1 + g_1 + r_1) / 3
+    avg_2 = (b_2 + g_2 + r_2) / 3
     gray_1 = np.sqrt((b_1 - avg_1) ** 2 + (g_1 - avg_1) ** 2 + (r_1 - avg_1) ** 2)
     gray_2 = np.sqrt((b_2 - avg_2) ** 2 + (g_2 - avg_2) ** 2 + (r_2 - avg_2) ** 2)
     if abs(gray_1 - gray_2) < 3:
@@ -308,88 +423,54 @@ def colordist(rgb_1, rgb_2):
 def labdist(lab_1, lab_2):
     l_1, a_1, b_1 = lab_1
     l_2, a_2, b_2 = lab_2
-    return np.sqrt((l_1-l_2)**2 + (a_1-a_2)**2 + (b_1-b_2)**2)
+    return np.sqrt((l_1 - l_2) ** 2 + (a_1 - a_2) ** 2 + (b_1 - b_2) ** 2)
 
 
 # 將每一行記錄點再次分群，目的是將每一條線條歸類為獨立分群，是為分群對應值，並且對應圖表上的原始資料，可作圖
 for i in range(len(total_pos)):
-    # 空集合不分群
     if cluster_count == cluster_num + 1:
         break
     value = x_label_to_value(i)
     x_value.append(value)
+    # 空集合不分群
     if total_pos[i] == [None]:
         for n in range(0, cluster_num):
             total_cluster[n].append("")
     # 第一次進入分群閥值定義
     else:
-        #check_list = []  # 該行確認是否有已排序的類別
-
         if len(total_pos[i]) == cluster_num:  # 假如該行紀錄點數量剛好等於總分群數
             for j in total_pos[i]:
-                value = place_to_value(j)
+                value = y_label_to_value(j)
+                # value = place_to_value(j)
                 if not clustered:  # 未歸類初始化，則直接定義參考值。
-                    pre_color[cluster_count-1] = opening[j, i]
+                    pre_color[cluster_count - 1] = opening[j, i]
                     # pre_color[cluster_count-1] = lab_img[j, i]
-                    pre_locate[cluster_count-1] = j
-                    total_cluster[cluster_count-1].append(value)
-                    print("已定義類別", cluster_count, "初始位置於", i, "行的", pre_locate[cluster_count-1], "座標")
-                    cluster_count = cluster_count+1
+                    pre_locate[cluster_count - 1] = j
+                    total_cluster[cluster_count - 1].append(value)
+                    print("已定義類別", cluster_count, "初始位置於", i, "行的", pre_locate[cluster_count - 1], "座標")
+                    cluster_count = cluster_count + 1
                     locate = i
                 else:  # 已歸類參考點。
                     pass
-                    '''
-                    dist_list = []  # 統計各距離
-                    for m in range(0, cluster_num):
-                        try:
-                            dist = abs(pre_locate[m] - j)
-                            dist_list.append(dist)
-                        except:
-                            dist_list.append([])
-                   #  place = dist_list.index(min(a for a in dist_list if isinstance))
-                    for a, element in enumerate(dist_list):
-                        # 找尋dist小且顏色距離小的值。
-                        if element < 10:
-                            place = dist_list.index(element)
-                            if colordist(pre_color[place], opening[j, i]) < 50:
-                                pre_color[place] = opening[j, i]
-                                total_cluster[place].append(value)
-                                check_list.append(place)
-                                pre_locate[place] = j
-                                '''
-
-                    '''
-                        place = dist_list.index(min(a for a in dist_list if isinstance))
-                        if colordist(pre_color[place], opening[j, i]) < 50:
-                            pre_color[place] = opening[j, i]
-                            total_cluster[place].append(value)
-                            check_list.append(place)
-                            pre_locate[place] = j
-                            
-
-                    else:
-                        print("Error")
-'''
         elif len(total_pos[i]) < cluster_num:  # 假如該行紀錄點數量小於總分群數
             for n in range(0, cluster_num):
                 total_cluster[n].append("")
                 continue
             for j in total_pos[i]:
-                value = place_to_value(j)
+                value = y_label_to_value(j)
                 if not clustered:
                     pass
                 else:
                     pass
         else:  # 假如該行紀錄點大於總分群數
             for j in total_pos[i]:
-                value = place_to_value(j)
+                value = y_label_to_value(j)
                 if not clustered:
                     pass
                 else:
                     pass
 
-#for i in range(locate+1, 241):
-for i in range(locate+1, len(total_pos)):
+for i in range(locate + 1, len(total_pos)):
     value = x_label_to_value(i)
     x_value.append(value)
     if total_pos[i] == [None]:
@@ -401,12 +482,11 @@ for i in range(locate+1, len(total_pos)):
         for j in total_pos[i]:
             dist_list = []
             color_dist_list = []
-            value = place_to_value(j)
+            # value = place_to_value(j)
+            value = y_label_to_value(j)
             for k in range(0, cluster_num):
                 dist = abs(pre_locate[k] - j)
                 color_dist = colordist(pre_color[k], opening[j, i])
-                #color_dist = labdist(pre_color[k], lab_img[j, i])
-                #print(color_dist)
                 dist_list.append(dist)
                 color_dist_list.append(color_dist)
             for a, element in enumerate(dist_list):
@@ -416,13 +496,13 @@ for i in range(locate+1, len(total_pos)):
                         if check_list.index(place):
                             print("有重疊的值，於座標(", j, i, ")")
                     except ValueError:
-                        #if check_count >= len(total_pos[i]):
+                        # if check_count >= len(total_pos[i]):
 
                         if color_dist_list[place] < 150:
                             check_list.append(place)
-                            check_count = check_count+1
-                            #pre_color[place] = opening[j, i]
-                            #pre_color[place] = lab_img[j, i]
+                            check_count = check_count + 1
+                            # pre_color[place] = opening[j, i]
+                            # pre_color[place] = lab_img[j, i]
                             pre_locate[place] = j
                             total_cluster[place].append(value)
                             break
@@ -435,17 +515,15 @@ for i in range(locate+1, len(total_pos)):
             except ValueError:
                 total_cluster[l].append("")
 
-
 sheet2 = book.add_sheet('sheet2')
 for i, e in enumerate(x_value):
     sheet2.write(i, 0, e)
 
-
 for k in range(0, cluster_num):
-    col = k+1
+    col = k + 1
     for i, e in enumerate(total_cluster[k]):
-        if type(e) == int:
-            sheet2.write(i, col, int(total_cluster[k][i]))
+        if type(e) == float:
+            sheet2.write(i, col, e)
         else:
             sheet2.write(i, col, str(total_cluster[k][i]))
         # sheet2.write(i,k,str(total_cluster[k][i]))
@@ -456,4 +534,5 @@ try:
 except PermissionError:
     print("請關閉Excel後存檔")
     pass
-
+endtime = datetime.datetime.now()
+print(endtime - starttime)

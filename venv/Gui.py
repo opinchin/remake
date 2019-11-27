@@ -22,11 +22,11 @@ save_path = 'C:/Users/Burny/PycharmProjects/remake/venv/output'
 
 def openfile():
     global test
-    global img
+    global origin
     if test:
-        img = cv2.imread(fileopenbox())
+        origin = cv2.imread(fileopenbox())
         cv2.namedWindow("Origin Picture")
-        cv2.imshow("Origin Picture",img)
+        cv2.imshow("Origin Picture", origin)
         test = False
         open_close_text.set("Close Image")
 
@@ -38,15 +38,19 @@ def openfile():
         checklegend_label.set('Not Define Legend')
         checkgrid.config(bg='red')
         checkgrid_label.set('Not Define Grid')
+        checkvalue.config(bg='red')
+        checkvalue_label.set("Not Define Value")
         data_region_locate.config(state="active")
         data_region_show.config(state="disabled")
         legend_detect.config(state="disabled")
         legend_show.config(state="disabled")
         legend_removed_show.config(state="disabled")
         grid_detect.config(state="disabled")
-        cv2.imwrite(os.path.join(save_path, 'Origin.jpg'), img)
+        label_detect.config(state="disabled")
+
+        cv2.imwrite(os.path.join(save_path, 'Origin.jpg'), origin)
     else:
-        test=True
+        test = True
         cv2.destroyAllWindows()
         open_close_text.set("Select and Show Image")
         reopen.config(state="active")
@@ -55,11 +59,11 @@ def openfile():
 # 關閉圖片
 def closeimg():
     global test1
-    global img
+    # global origin
     if test1:
         reopen.config(text="Close Origin Image")
         cv2.namedWindow("Origin Picture")
-        cv2.imshow("Origin Picture", img)
+        cv2.imshow("Origin Picture", origin)
         test1=False
     else:
         cv2.destroyWindow("Origin Picture")
@@ -67,11 +71,12 @@ def closeimg():
         test1=True
     #    open_close_text.set("Select and Show Image")
 
+
 '''
 # 統計hsv極值
 def high_hsv():
     global high_hsv
-    global img
+    global origin
     global hsv
     global imgk
 
@@ -196,15 +201,15 @@ def hsv_show():
 
 
 # 找尋DataRegion
-def DR_detect():
+def dataregion_detect():
     global image_data
     global test2
+    global upbound, downbound, leftbound, rightbound
     try:
-        global img
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(origin, cv2.COLOR_BGR2GRAY)
         ret, gray = cv2.threshold(gray, 230, 255, cv2.THRESH_BINARY)
         [a, b] = np.shape(gray)
-        image_data = img.copy()
+        image_data = origin.copy()
         # 每一行or列 像素累加值統計
         list = []
         # 統計每一行
@@ -218,12 +223,9 @@ def DR_detect():
         for i in range(0, b):
             if abs(list[i] - max(list)) < 10:
                 target = i
-             #   if target < 5:
-              #      return
                 break
-
-        # X軸
-        image_data = img[:, target:b]
+        # Y軸
+        image_data = origin[:, target:b]
         # 由右至左找尋有無右邊界
         for i in range(b - 1, 0, -1):
             if abs(list[i] - max(list)) < 10:
@@ -232,6 +234,8 @@ def DR_detect():
         # Check
         if target1 > 0.8 * b:
             image_data = image_data[:, 0:target1 - target]
+        leftbound = target
+        rightbound = target1
         # 統計每一列
         list = []
         for i in range(0, a):
@@ -245,7 +249,7 @@ def DR_detect():
             if abs(list[i - 1] - max(list)) < 10:
                 target = i
                 break
-        # Y軸
+        # X軸
         image_data = image_data[0:target, :]
         # 由上至下找尋有無上邊界
         for i in range(0, a):
@@ -257,37 +261,11 @@ def DR_detect():
             image_data = image_data[target1:target, :]
         else:
             print("找不到上邊界")
-        #之前找邊界的方法
-        '''
-        # 找尋X標籤軸邊界
-        a = round(img_row / 2)
-        b = round(img_col / 2)
-        x_eroded = eroded[a:img_row, b:img_col]
-        [a, b] = np.shape(x_eroded)
-        list, x = Gui_define.cal_each_y_accumulation(x_eroded)
-        bound_1, y2 = Gui_define.find_bound_inv(list, a)
-        y2 = y2 + a
-        bound_1 = bound_1 + a
-        x_label = eroded[y2:bound_1, :]
-        list, x = Gui_define.cal_each_x_accumulation(x_label)
-        [a, b] = np.shape(x_label)
-        [x2, x_roibound2] = Gui_define.find_bound_inv(list, b)
-        # 找尋Y標籤軸邊界
-        a = round(img_row / 2)
-        b = round(img_col / 2)
-        y_eroded = eroded[0:a, 0:b]
-        [a, b] = np.shape(y_eroded)
-        list, x = Gui_define.cal_each_x_accumulation(y_eroded)
-        bound_1, x1 = Gui_define.find_bound(list, 0)
-        y_label = eroded[:, bound_1:x1]
-        list, x = Gui_define.cal_each_y_accumulation(y_label)
-        [y1, y_roibound2] = Gui_define.find_bound(list, 0)
-        '''
-
+        downbound = target
+        upbound = target1
         cv2.imshow("DataRegion",image_data)
-        result=tkinter.messagebox.askokcancel("確認資料區域","結果是否於資料區域")
-        # print(result)
-        if result == True:
+        result = tkinter.messagebox.askokcancel("確認資料區域","結果是否於資料區域")
+        if result:
             print("正確選取資料區域")
             checklabel.config(bg='green')
             var.set('Defined Data Region')
@@ -300,10 +278,10 @@ def DR_detect():
             cv2.imwrite(os.path.join(save_path, 'data_region.jpg'),image_data)
         else:
             result1 = tkinter.messagebox.askokcancel("Error", "無法自動偵測是否要自行框選")
-            if result1 == True:
+            if result1:
                 legend_detect.config(state="active")
-                r=cv2.selectROI(img,showCrosshair=False)
-                image_data = img[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
+                r = cv2.selectROI(origin,showCrosshair=False)
+                image_data = origin[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
                 cv2.imshow("DataRegion",image_data)
                 checklabel.config(bg='green')
                 var.set('Defined Data Region')
@@ -315,10 +293,10 @@ def DR_detect():
                 print("請選擇其他圖片或自行框選正確的資料區域")
     except:
         result1 = tkinter.messagebox.askokcancel("Error", "無法自動偵測是否要自行框選")
-        if result1 == True:
+        if result1:
             legend_detect.config(state="active")
-            r = cv2.selectROI(img, showCrosshair=False)
-            image_data = img[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
+            r = cv2.selectROI(origin, showCrosshair=False)
+            image_data = origin[int(r[1]):int(r[1] + r[3]), int(r[0]):int(r[0] + r[2])]
             cv2.imshow("DataRegion", image_data)
             checklabel.config(bg='green')
             var.set('Defined Data Region')
@@ -396,11 +374,11 @@ def legend_removed_show_close():
     global test4
     if test4:
         cv2.destroyWindow("Legend Removed")
-        test4=False
+        test4 = False
         legend_removed_show.config(text="Open Legend Removed")
     else:
         cv2.imshow("Legend Removed", legend_removed)
-        test4=True
+        test4 = True
         legend_removed_show.config(text="Close Legend Removed")
 
 
@@ -432,6 +410,12 @@ def grid_removed_show_close_fun():
         cv2.imshow("Grid_removed", grid_removed)
         test5 = True
         grid_removed_show_close.config(text="Close Grid Removed")
+
+
+def label_define_fun():
+    checkvalue_label.set("Define Value")
+    checkvalue.config(bg='green')
+    print(upbound)
 
 
 '''
@@ -487,6 +471,7 @@ var = tkinter.StringVar()
 checklegend_label = tkinter.StringVar()
 open_close_text = tkinter.StringVar()
 checkgrid_label = tkinter.StringVar()
+checkvalue_label = tkinter.StringVar()
 
 # Check_Label
 var.set('Not Define Data Region')
@@ -494,7 +479,9 @@ checklabel = tkinter.Label(main, textvariable=var, bg='red', padx=10, pady=10, w
 checklegend_label.set('Not Define Legend')
 checklegend = tkinter.Label(main, textvariable=checklegend_label, bg='red', padx=10, pady=10, width=20)
 checkgrid_label.set('Not Define Grid')
-checkgrid = tkinter.Label(main, textvariable=checkgrid_label, bg='red', padx=10,pady=10, width=20 )
+checkgrid = tkinter.Label(main, textvariable=checkgrid_label, bg='red', padx=10, pady=10, width=20)
+checkvalue_label.set('Not Define Label Value')
+checkvalue = tkinter.Label(main, textvariable=checkvalue_label, bg='red', padx=10, pady=10, width=20)
 # Button
 reopen = tkinter.Button(main, text="Show Origin Image",
                         state="disabled",command=closeimg, width=20, height=1, padx=10, pady=20)
@@ -504,36 +491,39 @@ open_close = tkinter.Button(main,textvariable=open_close_text,
 # width=20, height=1, padx=10, pady=20)
 # hsv_count=tkinter.Button(main,text="hsv",command=tryt(),state="disabled", width=20, height=1, padx=10, pady=20)
 open_close_text.set("Select and Show Image")
-data_region_locate = tkinter.Button(main,text="Data_region_detect",command=DR_detect, width=20,
+data_region_locate = tkinter.Button(main, text="Data_region_detect",command=dataregion_detect, width=20,
                                     height=1, padx=10, pady=20, state="disabled")
-data_region_show = tkinter.Button(main,text="Close_Data_region",command=dataregion_show_close,
+data_region_show = tkinter.Button(main, text="Close_Data_region", command=dataregion_show_close,
                                   state="disabled", width=20, height=1, padx=10, pady=20)
 # origin_select=tkinter.Button(main,text="SelectOrigin",command=select_origin,state="disabled",
 # width=20, height=1, padx=10, pady=20)
-legend_detect = tkinter.Button(main,text="Legend_Detect",command=legend_locate,
-                             state="disabled",width=20, height=1, padx=10, pady=20)
-legend_show = tkinter.Button(main,text="Close_Legend",command=legend_show_close,
+legend_detect = tkinter.Button(main, text="Legend_Detect", command=legend_locate,
+                               state="disabled", width=20, height=1, padx=10, pady=20)
+legend_show = tkinter.Button(main, text="Close_Legend", command=legend_show_close,
                              state="disabled", width=20, height=1, padx=10, pady=20)
-legend_removed_show = tkinter.Button(main, text="Close_Remove_Legend",command=legend_removed_show_close,
+legend_removed_show = tkinter.Button(main, text="Close_Remove_Legend", command=legend_removed_show_close,
                                      state="disabled", width=20, height=1, padx=10, pady=20)
-grid_detect = tkinter.Button(main,text="Grid_Detect",command=grid_detect_fun,
+grid_detect = tkinter.Button(main, text="Grid_Detect", command=grid_detect_fun,
                              state="disabled",width=20, height=1, padx=10, pady=20)
-grid_removed_show_close = tkinter.Button(main, text="Close_Grid_Legend",command=grid_removed_show_close_fun,
-                                     state="disabled", width=20, height=1, padx=10, pady=20)
+grid_removed_show_close = tkinter.Button(main, text="Close_Grid_Legend", command=grid_removed_show_close_fun,
+                                         state="disabled", width=20, height=1, padx=10, pady=20)
+label_detect = tkinter.Button(main, text="Label_Detect", command=label_define_fun, state="active", width=20,
+                              height=1, padx=10, pady=20)
 esc = tkinter.Button(main, text="Esc", command=escape,
                      state="active", width=20, height=1, padx=10, pady=20)
 
 # Location
 
-open_close.grid(row=0,column=0)
-reopen.grid(row=0,column=1)
-data_region_locate.grid(row=1,column=0)
-data_region_show.grid(row=1,column=1)
+open_close.grid(row=0, column=0)
+reopen.grid(row=0, column=1)
+data_region_locate.grid(row=1, column=0)
+data_region_show.grid(row=1, column=1)
 legend_detect.grid(row=2, column=0)
 legend_show.grid(row=2, column=1)
 legend_removed_show.grid(row=2, column=2)
 grid_detect.grid(row=3, column=0)
 grid_removed_show_close.grid(row=3, column=1)
+label_detect.grid(row=4, column=0)
 # hsv_count.grid(row=2,column=0)
 # hsv_Individual_display.grid(row=2,column=1)
 # origin_select.grid(row=3,column=0)
@@ -541,4 +531,5 @@ esc.grid(row=0, column=4, sticky='w')
 checklabel.grid(row=5, column=4, sticky='w')
 checklegend.grid(row=6, column=4, sticky='w')
 checkgrid.grid(row=7, column=4, sticky='w')
+checkvalue.grid(row=8, column=4, sticky='w')
 main.mainloop()
