@@ -7,6 +7,7 @@ from tempfile import TemporaryFile
 import scipy.signal
 import pytesseract
 import datetime
+import math
 
 
 def grid_space_detect(image):
@@ -252,8 +253,8 @@ for i in range(0, cluster_num):
     pre_locate.append([""])
     pre_color.append([])
 # Label Define
-img = cv2.imread("ult_image.png")
-legend_remove = cv2.imread("Legend Removed_ult.jpg")
+img = cv2.imread("Origin1.jpg")
+legend_remove = cv2.imread("Legend Removed1.jpg")
 row, col, _ = np.shape(img)
 up_bound, down_bound, left_bound, right_bound = dataregion_detect(img)
 # print(x, y)
@@ -263,9 +264,10 @@ x_label_fix = x_label[:, left_bound:right_bound]
 y_label_fix = y_label[up_bound:down_bound, :]
 grid = True
 x_grid_space, y_grid_space, aa, cc, peaks, peaks1 = grid_space_detect(legend_remove)
-check_value = []
-check_place = []
+
 if grid:
+    check_value = []
+    check_place = []
     text = pytesseract.image_to_string(y_label_fix, lang='engB', config='--psm 6 --oem 1')
     out1 = pytesseract.image_to_data(y_label_fix, lang='engB', config='--psm 6 --oem 1',
                                      output_type=pytesseract.Output.DICT)
@@ -281,22 +283,25 @@ if grid:
                 # print("Got Label In (", x, y, ") and the Value is (", out1['text'][i],  ")")
     check = []
     check_place_ = []
+    #check_temp = []
     find_or_not = False
     for i in range(0, len(check_value)):
         if find_or_not:
             break
         else:
             check[:] = [abs(x - check_value[i]) for x in check_value]
-            check_place_[:] = [x - (i + 1) for x in check_place]
+            k = 0 - check_place[check.index(0)]
+            check_place_[:] = [x + k for x in check_place]
+            # check_place_[:] = [x - i for x in check_place]
+            check_temp = check.copy()
             for j in range(0, len(check_value)):
                 try:
                     check[j] = abs(check[j] / check_place_[j])
                 except ZeroDivisionError:
                     pass
             for j in set(check):
-                if check.count(j) > len(check_value) / 2:
+                if check.count(j) >= math.floor(len(check_value) / 2):
                     print("Label Define")
-                    print("")
                     thr_value = check_value[check.index(j)]
                     thr_place = x_grid_space*check_place[check.index(j)]
                     check[check.index(j)] = 0
@@ -311,6 +316,8 @@ if grid:
     print("Y軸Label參考點一:位於", thr_place, "Value = ", thr_value)
     print("Y軸Label參考點二:位於", thr1_place, "Value = ", thr1_value)
 
+    check_value = []
+    check_place = []
     out1 = pytesseract.image_to_data(x_label_fix, lang='engB', config='--psm 6 --oem 1',
                                      output_type=pytesseract.Output.DICT)
     num_boxes = len(out1['level'])
@@ -331,16 +338,18 @@ if grid:
             break
         else:
             check[:] = [abs(x - check_value[i]) for x in check_value]
-            check_place_[:] = [x - (i + 1) for x in check_place]
+            k = 0 - check_place[check.index(0)]
+            check_place_[:] = [x + k for x in check_place]
+            # check_place_[:] = [x - i for x in check_place]
+            check_temp = check.copy()
             for j in range(0, len(check_value)):
                 try:
                     check[j] = abs(check[j] / check_place_[j])
                 except ZeroDivisionError:
                     pass
             for j in set(check):
-                if check.count(j) > len(check_value) / 2:
+                if check.count(j) >= math.floor(len(check_value) / 2):
                     print("Label Define")
-                    print("")
                     thr_value = check_value[check.index(j)]
                     thr_place = y_grid_space * check_place[check.index(j)]
                     check[check.index(j)] = 0
