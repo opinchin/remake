@@ -179,8 +179,8 @@ def dataregion_detect(img):
     return up_bound, down_bound, left_bound, right_bound
 
 
-img = cv2.imread("ult_image.png")
-legend_remove = cv2.imread("Legend Removed_ult.jpg")
+img = cv2.imread("testpaper4")
+legend_remove = cv2.imread("Legend Removed")
 row, col, _ = np.shape(img)
 up_bound, down_bound, left_bound, right_bound = dataregion_detect(img)
 # print(x, y)
