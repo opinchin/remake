@@ -502,3 +502,42 @@ def remove_y_expected_grid(image, peak, acc_list,
             except:
                 break
 
+
+'''
+# 選擇一點
+def cv_select_origin(event, x, y, flags, param):
+    global coordinate
+    if event == cv2.EVENT_LBUTTONDOWN:
+        coordinate=(x,y)
+        print(image_data[y,x])
+        print(x,y)
+        imgok=image_data[y - 1:y + 1, x - 1:x + 1, :]
+        imgok = cv2.resize(imgok, (300, 300))
+        cv2.line(imgok, (140, 150), (160, 150), (0, 0, 255), 1)
+        cv2.line(imgok, (150, 140), (150, 160), (0, 0, 255), 1)
+        cv2.imshow("123", imgok)
+
+    if event ==cv2.EVENT_MOUSEMOVE:
+        try:
+            imgk = image_data[y - 5:y + 5, x - 5:x + 5, :]
+            imgk = cv2.resize(imgk, (300, 300))
+            cv2.line(imgk, (140, 150), (160, 150), (0, 0, 255), 1)
+            cv2.line(imgk, (150, 140), (150, 160), (0, 0, 255), 1)
+            cv2.imshow("", imgk)
+        except:
+            pass
+'''
+'''
+def select_origin():
+    global coordinate
+    coordinate = 1
+    cv2.namedWindow('image')
+    while coordinate == 1:
+        print("選取後按任意鍵確定")
+        cv2.setMouseCallback('image', cv_select_origin)
+        cv2.imshow('image', image_data)
+        cv2.waitKey()
+        if coordinate != 1:
+            cv2.destroyAllWindows()
+    print("您選取的座標為", coordinate)
+'''

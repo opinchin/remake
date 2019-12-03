@@ -9,7 +9,8 @@ import Gui_define
 import os
 import pytesseract
 import math
-
+import xlwt
+from tempfile import TemporaryFile
 
 test = True
 test1 = True
@@ -420,6 +421,8 @@ def grid_removed_show_close_fun():
 
 
 def label_define_fun():
+    global y_label_place_1, y_label_place_2, y_label_value_1,y_label_value_2
+    global x_label_place_1, x_label_place_2, x_label_value_1, x_label_value_2
     x_label = origin[downbound:row, :]
     y_label = origin[:, 0:leftbound]
     x_label_fix = x_label[:, leftbound:rightbound]
@@ -520,49 +523,221 @@ def label_define_fun():
         print("X軸Label參考點二:位於", x_label_place_2, "Value = ", x_label_value_2)
     else:
         pass
+    data_extract.config(state='active')
     checkvalue_label.set("Define Value")
     checkvalue.config(bg='green')
 
 
-
-'''
-# 選擇一點
-def cv_select_origin(event, x, y, flags, param):
-    global coordinate
-    if event == cv2.EVENT_LBUTTONDOWN:
-        coordinate=(x,y)
-        print(image_data[y,x])
-        print(x,y)
-        imgok=image_data[y - 1:y + 1, x - 1:x + 1, :]
-        imgok = cv2.resize(imgok, (300, 300))
-        cv2.line(imgok, (140, 150), (160, 150), (0, 0, 255), 1)
-        cv2.line(imgok, (150, 140), (150, 160), (0, 0, 255), 1)
-        cv2.imshow("123", imgok)
-
-    if event ==cv2.EVENT_MOUSEMOVE:
+def data_extract_fun():
+    img = grid_removed
+    [a, b, c] = np.shape(img)  # a=484 b=996,c=3
+    kernel = np.ones((3, 3), np.uint8)
+    blur = cv2.blur(img, (3, 3))
+    opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)  # BGR
+    cv2.imwrite("blurop.jpg", opening)
+    lab_img = cv2.cvtColor(opening, cv2.COLOR_BGR2LAB)
+    hsv_img = cv2.cvtColor(opening, cv2.COLOR_BGR2HSV)
+    gray = cv2.cvtColor(opening, cv2.COLOR_BGR2GRAY)
+    ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
+    # 各行的紀錄點位置
+    total_pos = []
+    for i in range(0, b):
+        pos = []  # 紀錄該行的pixel值
+        for j in range(0, a):  # 每一列
+            pos.append(thresh[j, i])
+        add_none = []  # 欲添加於Total_pos 之 List
         try:
-            imgk = image_data[y - 5:y + 5, x - 5:x + 5, :]
-            imgk = cv2.resize(imgk, (300, 300))
-            cv2.line(imgk, (140, 150), (160, 150), (0, 0, 255), 1)
-            cv2.line(imgk, (150, 140), (150, 160), (0, 0, 255), 1)
-            cv2.imshow("", imgk)
-        except:
-            pass
-'''
-'''
-def select_origin():
-    global coordinate
-    coordinate = 1
-    cv2.namedWindow('image')
-    while coordinate == 1:
-        print("選取後按任意鍵確定")
-        cv2.setMouseCallback('image', cv_select_origin)
-        cv2.imshow('image', image_data)
-        cv2.waitKey()
-        if coordinate != 1:
-            cv2.destroyAllWindows()
-    print("您選取的座標為", coordinate)
-'''
+            [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
+            temp = [round((k1[i] + k2[i] - 1) / 2) for i in range(len(k1))]
+            total_pos.append(temp)
+        except UnboundLocalError:
+            total_pos.append(add_none)
+    # 若該行紀錄點為空集合，則將其補上None
+    for i in range(0, np.size(total_pos)):
+        if not total_pos[i]:
+            total_pos[i] = [None]
+    # 將每一行位置儲存至Excel分頁一
+    book = xlwt.Workbook()
+    sheet1 = book.add_sheet('Total_Position')
+    for i, e in enumerate(total_pos):
+        sheet1.write(i, 0, str(total_pos[i]))
+    name = "new_data.xls"
+    try:
+        book.save(name)
+        book.save(TemporaryFile())
+    except PermissionError:
+        print("請關閉Excel後存檔")
+        pass
+    cluster_num = 0
+    pre_cluster_num = 0
+    # 取出所有記錄點結果之數量的最大值
+    for i in range(len(total_pos)):
+        a = len(total_pos[i])
+        if a > cluster_num:
+            count = 0
+            for j in range(len(total_pos)):
+                if a == len(total_pos[j]):
+                    count = count + 1
+            if count < len(total_pos) / 10:
+                cluster_num = pre_cluster_num
+            else:
+                pre_cluster_num = a
+                cluster_num = a
+    print("分成", cluster_num, "類")
+
+    # 分群對應值 與 分群參考點 之初始化
+    total_cluster = []
+    pre_locate = []
+    pre_color = []
+    x_value = []
+    for i in range(0, cluster_num):
+        # x_value.append([])
+        total_cluster.append([])
+        pre_locate.append([""])
+        pre_color.append([])
+    clustered = False
+    cluster_count = 1
+
+    def place_to_value(loc):
+        if loc == y_label_place_1:
+            value_ = y_label_value_1
+        else:
+            value_ = round(y_label_value_1 - (abs((y_label_value_1 - y_label_value_2)) /
+                                       abs((y_label_place_1 - y_label_place_2)) * (loc - y_label_place_1)))
+        return np.float(value_)
+
+    def x_label_to_value(loc):
+        if loc == x_label_place_1:
+            value_ = x_label_value_1
+        else:
+            value_ = x_label_value_1 - (abs((x_label_value_1 - x_label_value_2)) /
+                                       abs((x_label_place_1 - x_label_place_2)) * (x_label_place_1 - loc))
+        return np.float(value_)
+
+    def colordist(rgb_1, rgb_2):
+        b_1, g_1, r_1 = rgb_1
+        b_2, g_2, r_2 = rgb_2
+        r_1 = float(r_1)
+        g_1 = float(g_1)
+        b_1 = float(b_1)
+        r_2 = float(r_2)
+        g_2 = float(g_2)
+        b_2 = float(b_2)
+        avg_1 = (b_1 + g_1 + r_1) / 3
+        avg_2 = (b_2 + g_2 + r_2) / 3
+        gray_1 = np.sqrt((b_1 - avg_1) ** 2 + (g_1 - avg_1) ** 2 + (r_1 - avg_1) ** 2)
+        gray_2 = np.sqrt((b_2 - avg_2) ** 2 + (g_2 - avg_2) ** 2 + (r_2 - avg_2) ** 2)
+        if abs(gray_1 - gray_2) < 3:
+            return 0
+        rmean = (r_1 + r_2) / 2
+        r = r_1 - r_2
+        g = g_1 - g_2
+        bl = b_1 - b_2
+        return np.sqrt((2 + rmean / 256) * (r ** 2) + 4 * (g ** 2) + (2 + (255 - rmean) / 256) * (bl ** 2))
+
+    def labdist(lab_1, lab_2):
+        l_1, a_1, b_1 = lab_1
+        l_2, a_2, b_2 = lab_2
+        return np.sqrt((l_1 - l_2) ** 2 + (a_1 - a_2) ** 2 + (b_1 - b_2) ** 2)
+
+    # 將每一行記錄點再次分群，目的是將每一條線條歸類為獨立分群，是為分群對應值，並且對應圖表上的原始資料，可作圖
+    for i in range(len(total_pos)):
+        # 空集合不分群
+        if cluster_count == cluster_num + 1:
+            break
+        value = x_label_to_value(i)
+        x_value.append(value)
+        if total_pos[i] == [None]:
+            for n in range(0, cluster_num):
+                total_cluster[n].append("")
+        # 第一次進入分群閥值定義
+        else:
+            if len(total_pos[i]) == cluster_num:  # 假如該行紀錄點數量剛好等於總分群數
+                for j in total_pos[i]:
+                    value = place_to_value(j)
+                    if not clustered:  # 未歸類初始化，則直接定義參考值。
+                        pre_color[cluster_count - 1] = opening[j, i]
+                        pre_locate[cluster_count - 1] = j
+                        total_cluster[cluster_count - 1].append(value)
+                        print("已定義類別", cluster_count, "初始位置於", i, "行的", pre_locate[cluster_count - 1], "座標")
+                        cluster_count = cluster_count + 1
+                        locate = i
+                    else:  # 已歸類參考點。
+                        pass
+            elif len(total_pos[i]) < cluster_num:  # 假如該行紀錄點數量小於總分群數
+                for n in range(0, cluster_num):
+                    total_cluster[n].append("")
+                    continue
+                for j in total_pos[i]:
+                    if not clustered:
+                        pass
+                    else:
+                        pass
+            else:  # 假如該行紀錄點大於總分群數
+                for j in total_pos[i]:
+                    if not clustered:
+                        pass
+                    else:
+                        pass
+    for i in range(locate + 1, len(total_pos)):
+        value = x_label_to_value(i)
+        x_value.append(value)
+        if total_pos[i] == [None]:
+            for n in range(0, cluster_num):
+                total_cluster[n].append("")
+        else:
+            check_list = []
+            check_count = 0
+            for j in total_pos[i]:
+                dist_list = []
+                color_dist_list = []
+                value = place_to_value(j)
+                for k in range(0, cluster_num):
+                    dist = abs(pre_locate[k] - j)
+                    color_dist = colordist(pre_color[k], opening[j, i])
+                    dist_list.append(dist)
+                    color_dist_list.append(color_dist)
+                for a, element in enumerate(dist_list):
+                    if element < 20:
+                        place = a
+                        try:
+                            if check_list.index(place):
+                                pass
+                                # print("有重疊的值，於座標(", j, i, ")")
+                        except ValueError:
+                            if color_dist_list[place] < 150:
+                                check_list.append(place)
+                                check_count = check_count + 1
+                                pre_locate[place] = j
+                                total_cluster[place].append(value)
+                                break
+                            else:
+                                pass
+                                # print("未歸類的值，於座標(", j, i, ")", place)
+
+            for l in range(0, cluster_num):
+                try:
+                    check_list.index(l)
+                except ValueError:
+                    total_cluster[l].append("")
+
+    sheet2 = book.add_sheet('after extracting')
+    for i, e in enumerate(x_value):
+        sheet2.write(i, 0, e)
+    for k in range(0, cluster_num):
+        col = k + 1
+        for i, e in enumerate(total_cluster[k]):
+            if type(e) == float:
+                sheet2.write(i, col, e)
+            else:
+                sheet2.write(i, col, str(total_cluster[k][i]))
+    name = "new_data.xls"
+    try:
+        book.save(name)
+        book.save(TemporaryFile())
+    except PermissionError:
+        print("請關閉Excel後存檔")
+        pass
 
 
 # ESC KEY
@@ -591,9 +766,9 @@ checkvalue_label.set('Not Define Label Value')
 checkvalue = tkinter.Label(main, textvariable=checkvalue_label, bg='red', padx=10, pady=10, width=20)
 # Button
 reopen = tkinter.Button(main, text="Show Origin Image",
-                        state="disabled",command=closeimg, width=20, height=1, padx=10, pady=20)
+                        state="disabled", command=closeimg, width=20, height=1, padx=10, pady=20)
 open_close = tkinter.Button(main,textvariable=open_close_text,
-                            state="active",command=openfile, width=20, height=1, padx=10, pady=20)
+                            state="active", command=openfile, width=20, height=1, padx=10, pady=20)
 # hsv_Individual_display=tkinter.Button(main,text="Individual display",command=hsv_show,state="disabled",
 # width=20, height=1, padx=10, pady=20)
 # hsv_count=tkinter.Button(main,text="hsv",command=tryt(),state="disabled", width=20, height=1, padx=10, pady=20)
@@ -614,7 +789,9 @@ grid_detect = tkinter.Button(main, text="Grid_Detect", command=grid_detect_fun,
                              state="disabled",width=20, height=1, padx=10, pady=20)
 grid_removed_show_close = tkinter.Button(main, text="Close_Grid_Legend", command=grid_removed_show_close_fun,
                                          state="disabled", width=20, height=1, padx=10, pady=20)
-label_detect = tkinter.Button(main, text="Label_Detect", command=label_define_fun, state="active", width=20,
+label_detect = tkinter.Button(main, text="Label_Detect", command=label_define_fun, state="disabled", width=20,
+                              height=1, padx=10, pady=20)
+data_extract = tkinter.Button(main, text="Data_Extract", command=data_extract_fun, state="disabled", width=20,
                               height=1, padx=10, pady=20)
 esc = tkinter.Button(main, text="Esc", command=escape,
                      state="active", width=20, height=1, padx=10, pady=20)
@@ -631,12 +808,13 @@ legend_removed_show.grid(row=2, column=2)
 grid_detect.grid(row=3, column=0)
 grid_removed_show_close.grid(row=3, column=1)
 label_detect.grid(row=4, column=0)
+data_extract.grid(row=5, column=0)
 # hsv_count.grid(row=2,column=0)
 # hsv_Individual_display.grid(row=2,column=1)
 # origin_select.grid(row=3,column=0)
 esc.grid(row=0, column=4, sticky='w')
-checklabel.grid(row=5, column=4, sticky='w')
-checklegend.grid(row=6, column=4, sticky='w')
-checkgrid.grid(row=7, column=4, sticky='w')
-checkvalue.grid(row=8, column=4, sticky='w')
+checklabel.grid(row=6, column=4, sticky='w')
+checklegend.grid(row=7, column=4, sticky='w')
+checkgrid.grid(row=8, column=4, sticky='w')
+checkvalue.grid(row=9, column=4, sticky='w')
 main.mainloop()

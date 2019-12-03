@@ -8,6 +8,23 @@ import scipy.signal
 import pytesseract
 
 
+def correct_data(cluster):
+    for i in range(0, len(cluster)):
+        pre = cluster[i]
+        if type(pre) != str:
+            if type(cluster[i+1]) == str:
+                for j in range(i+1, len(cluster)):
+                    end = cluster[j]
+                    if type(end) != str:
+                        # print(i, pre)
+                        # print(j, end)
+                        d = (end - pre)/(j - i)
+                        for k in range(i+1, j):
+                            pre = pre + d
+                            cluster[k] = pre
+                        break
+
+
 def grid_space_detect(image):
     import Gui_define
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -184,7 +201,6 @@ def dataregion_detect(image):
 
 
 img = cv2.imread("Grid_removed (2).jpg")
-
 [a, b, c] = np.shape(img)  # a=484 b=996,c=3
 kernel = np.ones((3, 3), np.uint8)
 #blur = cv2.medianBlur(img, 3)
@@ -257,12 +273,14 @@ thr_value = 110
 thr1_value = 50
 thr_place = 41
 thr1_place = 281
-clustered = False
-cluster_count = 1
+
 x_label_value_1 = 10
 x_label_place_1 = 100
 x_label_value_2 = 20
 x_label_place_2 = 200
+
+clustered = False
+cluster_count = 1
 
 
 def place_to_value(place):
@@ -440,12 +458,14 @@ sheet2 = book.add_sheet('sheet2')
 for i, e in enumerate(x_value):
     sheet2.write(i, 0, e)
 
+for i in range(0, cluster_num):
+    correct_data(total_cluster[i])
 
 for k in range(0, cluster_num):
     col = k+1
     for i, e in enumerate(total_cluster[k]):
-        if type(e) == int:
-            sheet2.write(i, col, int(total_cluster[k][i]))
+        if type(e) != str:
+            sheet2.write(i, col, e)
         else:
             sheet2.write(i, col, str(total_cluster[k][i]))
         # sheet2.write(i,k,str(total_cluster[k][i]))
