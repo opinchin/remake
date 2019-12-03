@@ -131,7 +131,7 @@ def dataregion_detect(img):
         list.append(count)
     # 由左至右找尋符合邊界(X軸)
     for i in range(0, b):
-        if abs(list[i] - max(list)) < 10:
+        if abs(list[i] - max(list)) < a/30:
             target = i
             break
     left_bound = target
@@ -139,7 +139,7 @@ def dataregion_detect(img):
     image_data = img[:, target:b]
     # 由右至左找尋有無右邊界
     for i in range(b - 1, 0, -1):
-        if abs(list[i] - max(list)) < 10:
+        if abs(list[i] - max(list)) < a/30:
             target1 = i
             break
 
@@ -157,7 +157,7 @@ def dataregion_detect(img):
         list.append(count)
     # 由下至上找尋符合邊界(Y軸)
     for i in range(a, 0, -1):
-        if abs(list[i - 1] - max(list)) < 10:
+        if abs(list[i - 1] - max(list)) < b/30:
             target = i
             break
     down_bound = target
@@ -165,7 +165,7 @@ def dataregion_detect(img):
     image_data = image_data[0:target, :]
     # 由上至下找尋有無上邊界
     for i in range(0, a):
-        if abs(list[i] - max(list)) < 10:
+        if abs(list[i] - max(list)) < b/30:
             target1 = i
             break
 
@@ -179,8 +179,8 @@ def dataregion_detect(img):
     return up_bound, down_bound, left_bound, right_bound
 
 
-img = cv2.imread("testpaper4")
-legend_remove = cv2.imread("Legend Removed")
+img = cv2.imread("testpaper4.jpg")
+# legend_remove = cv2.imread("Legend Removed")
 row, col, _ = np.shape(img)
 up_bound, down_bound, left_bound, right_bound = dataregion_detect(img)
 # print(x, y)
@@ -188,10 +188,12 @@ x_label = img[down_bound:row, :]
 y_label = img[:, 0:left_bound]
 x_label_fix = x_label[:, left_bound:right_bound]
 y_label_fix = y_label[up_bound:down_bound, :]
-grid = True
-x_grid_space, y_grid_space, aa, cc, peaks, peaks1 = grid_space_detect(legend_remove)
+grid = False
+# x_grid_space, y_grid_space, aa, cc, peaks, peaks1 = grid_space_detect(legend_remove)
 check_value = []
 check_place = []
+
+
 if grid:
     text = pytesseract.image_to_string(y_label_fix, lang='engB', config='--psm 6 --oem 1')
     out1 = pytesseract.image_to_data(y_label_fix, lang='engB', config='--psm 6 --oem 1',
@@ -274,4 +276,11 @@ if grid:
     print("X軸Label參考點一:位於", thr_place, "Value = ", thr_value)
     print("X軸Label參考點二:位於", thr1_place, "Value = ", thr1_value)
 else:
-    pass
+    text = pytesseract.image_to_string(y_label_fix, lang='engB', config='--psm 6 --oem 1')
+    print(text)
+    print("")
+    text = pytesseract.image_to_string(x_label_fix, lang='engB', config='--psm 6 --oem 1')
+    print(text)
+    cv2.imshow("y",y_label_fix)
+    cv2.imshow("x",x_label_fix)
+    cv2.waitKey()
