@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import scipy.signal
 import pytesseract
+from decimal import Decimal
+import math
 
 
 def grid_space_detect(image):
@@ -277,10 +279,63 @@ if grid:
     print("X軸Label參考點二:位於", thr1_place, "Value = ", thr1_value)
 else:
     text = pytesseract.image_to_string(y_label_fix, lang='engB', config='--psm 6 --oem 1')
-    print(text)
-    print("")
-    text = pytesseract.image_to_string(x_label_fix, lang='engB', config='--psm 6 --oem 1')
-    print(text)
-    cv2.imshow("y",y_label_fix)
-    cv2.imshow("x",x_label_fix)
-    cv2.waitKey()
+    out1 = pytesseract.image_to_data(y_label_fix, lang='engB', config='--psm 6 --oem 1',
+                                     output_type=pytesseract.Output.DICT)
+    check_place = []
+    check_value = []
+    check_place_ = []
+    check_dist = []
+    num_boxes = len(out1['level'])
+    for i in range(0, num_boxes):
+        try:
+            k = float(out1['text'][i])
+            (x, y, w, h) = (out1['left'][i], out1['top'][i], out1['width'][i], out1['height'][i])
+            check_value.append(k)
+            check_place.append(y)
+            cv2.rectangle(y_label_fix, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            # print(k, "=", x, y, w, h)
+        except ValueError:
+            pass
+    find_or_not = False
+    for i in check_place:
+        if find_or_not:
+            break
+        check_dist[:] = [x - i for x in check_place]
+        temp = check_dist.index(0)
+        if temp+1 != len(check_place):
+            check_dist[:] = [abs(x / check_dist[temp+1]) for x in check_dist]
+            for i in range(0, len(check_dist)):
+                k = abs(check_dist[i] - round(check_dist[i]))
+                if k < 0.1:
+                    check_dist[i] = round(check_dist[i])
+                else:
+                    check_dist[i] = ''
+            k = check_dist.index(0)
+            check_value_ = check_value.copy()
+            check = check_value.copy()
+            check_value_[:] = [abs(Decimal(str(x)) - Decimal(str(check_value[k]))) for x
+                               in check_value]
+            # print(check_value_)
+            # print(check_dist)
+            for j in range(0, len(check_value)):
+                try:
+                    check[j] = float((check_value_[j]) / check_dist[j])
+                except:
+                    pass
+            for j in set(check):
+                if check.count(j) >= math.floor(len(check_value) / 2):
+                    print("Label Define")
+                    thr_value = check_value[check.index(j)]
+                    thr_place = check_place[check.index(j)]
+                    check[check.index(j)] = 0
+                    thr1_value = check_value[check.index(j)]
+                    thr1_place = check_place[check.index(j)]
+                    find_or_not = True
+                    break
+            print(check)
+    y_label_place_1 = thr_place
+    y_label_value_1 = thr_value
+    y_label_place_2 = thr1_place
+    y_label_value_2 = thr1_value
+    print("Y軸Label參考點一:位於", thr_place, "Value = ", thr_value)
+    print("Y軸Label參考點二:位於", thr1_place, "Value = ", thr1_value)

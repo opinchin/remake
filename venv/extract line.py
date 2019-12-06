@@ -10,6 +10,8 @@ import pytesseract
 
 def correct_data(cluster):
     for i in range(0, len(cluster)):
+        if i == len(cluster)-1:
+            break
         pre = cluster[i]
         if type(pre) != str:
             if type(cluster[i+1]) == str:
@@ -200,13 +202,13 @@ def dataregion_detect(image):
     return up_bound, down_bound, left_bound, right_bound
 
 
-img = cv2.imread("Grid_removed (2).jpg")
+img = cv2.imread("Grid_removed.jpg")
 [a, b, c] = np.shape(img)  # a=484 b=996,c=3
 kernel = np.ones((3, 3), np.uint8)
 #blur = cv2.medianBlur(img, 3)
 blur = cv2.blur(img, (3, 3))
 opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)  # BGR
-cv2.imwrite("blurop.jpg", opening)
+# cv2.imwrite("blurop.jpg", opening)
 lab_img = cv2.cvtColor(opening, cv2.COLOR_BGR2LAB)
 hsv_img = cv2.cvtColor(opening, cv2.COLOR_BGR2HSV)
 gray = cv2.cvtColor(opening, cv2.COLOR_BGR2GRAY)
@@ -269,15 +271,15 @@ for i in range(0, cluster_num):
     pre_locate.append([""])
     pre_color.append([])
 
-thr_value = 110
+thr_value = 60
 thr1_value = 50
-thr_place = 41
-thr1_place = 281
+thr_place = 76
+thr1_place = 114
 
-x_label_value_1 = 10
-x_label_place_1 = 100
-x_label_value_2 = 20
-x_label_place_2 = 200
+x_label_value_1 = 20
+x_label_place_1 = 190
+x_label_value_2 = 25
+x_label_place_2 = 285
 
 clustered = False
 cluster_count = 1

@@ -11,6 +11,7 @@ import pytesseract
 import math
 import xlwt
 from tempfile import TemporaryFile
+from decimal import Decimal
 
 test = True
 test1 = True
@@ -72,8 +73,7 @@ def closeimg():
     else:
         cv2.destroyWindow("Origin Picture")
         reopen.config(text="Show Origin Image")
-        test1=True
-    #    open_close_text.set("Select and Show Image")
+        test1 = True
 
 
 '''
@@ -436,13 +436,23 @@ def label_define_fun():
                                            output_type=pytesseract.Output.DICT)
         num_boxes = len(output['level'])
         for i in range(0, num_boxes):
+            try:
+                k = float(output['text'][i])
+                (x, y, w, h) = (output['left'][i], output['top'][i], output['width'][i],
+                                output['height'][i])
+                if abs((y + h / 2) / grid_x - round((y + h / 2) / grid_x)) < 0.1:
+                    check_value.append(k)
+                    check_place.append(int(round((y + h / 2) / grid_x)))
+            except ValueError:
+                pass
+            '''
             if not output['text'][i].isdigit():
                 pass
             else:
                 (x, y, w, h) = (output['left'][i], output['top'][i], output['width'][i], output['height'][i])
                 if abs((y + h / 2) / grid_x - round((y + h / 2) / grid_x)) < 0.1:
                     check_value.append(int(output['text'][i]))
-                    check_place.append(int(round((y + h / 2) / grid_x)))
+                    check_place.append(int(round((y + h / 2) / grid_x)))'''
         check = []
         check_place_ = []
         find_or_not = False
@@ -481,13 +491,23 @@ def label_define_fun():
         check_place = []
         num_boxes = len(output['level'])
         for i in range(0, num_boxes):
+            try:
+                k = float(output['text'][i])
+                (x, y, w, h) = (output['left'][i], output['top'][i], output['width'][i],
+                                output['height'][i])
+                if abs((x + w / 2) / grid_y - round((x + w / 2) / grid_y)) < 0.1:
+                    check_value.append(k)
+                    check_place.append(int(round((x + w / 2) / grid_y)))
+            except ValueError:
+                pass
+            '''
             if not output['text'][i].isdigit():
                 pass
             else:
                 (x, y, w, h) = (output['left'][i], output['top'][i], output['width'][i], output['height'][i])
                 if abs((x + w / 2) / grid_y - round((x + w / 2) / grid_y)) < 0.1:
                     check_value.append(int(output['text'][i]))
-                    check_place.append(int(round((x + w / 2) / grid_y)))
+                    check_place.append(int(round((x + w / 2) / grid_y)))'''
         check = []
         check_place_ = []
         find_or_not = False
@@ -498,8 +518,6 @@ def label_define_fun():
                 check[:] = [abs(x - check_value[i]) for x in check_value]
                 k = 0 - check_place[check.index(0)]
                 check_place_[:] = [x + k for x in check_place]
-                # check[:] = [abs(x - check_value[i]) for x in check_value]
-                # check_place_[:] = [x - (i + 1) for x in check_place]
                 for j in range(0, len(check_value)):
                     try:
                         check[j] = abs(check[j] / check_place_[j])
@@ -534,7 +552,6 @@ def data_extract_fun():
     kernel = np.ones((3, 3), np.uint8)
     blur = cv2.blur(img, (3, 3))
     opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)  # BGR
-    cv2.imwrite("blurop.jpg", opening)
     lab_img = cv2.cvtColor(opening, cv2.COLOR_BGR2LAB)
     hsv_img = cv2.cvtColor(opening, cv2.COLOR_BGR2HSV)
     gray = cv2.cvtColor(opening, cv2.COLOR_BGR2GRAY)
@@ -724,6 +741,8 @@ def data_extract_fun():
     sheet2 = book.add_sheet('after extracting')
     for i, e in enumerate(x_value):
         sheet2.write(i, 0, e)
+    for i in range(0, cluster_num):
+        Gui_define.correct_data(total_cluster[i])
     for k in range(0, cluster_num):
         col = k + 1
         for i, e in enumerate(total_cluster[k]):

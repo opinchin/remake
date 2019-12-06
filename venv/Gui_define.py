@@ -503,6 +503,26 @@ def remove_y_expected_grid(image, peak, acc_list,
                 break
 
 
+def correct_data(cluster):
+    for i in range(0, len(cluster)):
+        if i == len(cluster)-1:
+                break
+        else:
+            pre = cluster[i]
+            if type(pre) != str:
+                if type(cluster[i+1]) == str:
+                    for j in range(i+1, len(cluster)):
+                        end = cluster[j]
+                        if type(end) != str:
+                            # print(i, pre)
+                            # print(j, end)
+                            d = (end - pre)/(j - i)
+                            for k in range(i+1, j):
+                                pre = pre + d
+                                cluster[k] = pre
+                            break
+
+
 '''
 # 選擇一點
 def cv_select_origin(event, x, y, flags, param):
