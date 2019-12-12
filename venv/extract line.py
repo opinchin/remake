@@ -420,17 +420,6 @@ for i in range(len(total_pos)):
 
 
 def expect_locate(in_which_cluster, in_which_col):
-    for i in range(in_which_col-1, len(total_pos)):
-        for j in total_pos[i]:
-            dist_list = []
-            color_dist_list = []
-            for k in range(0, cluster_num):
-                dist = abs(pre_locate[k] - j)
-                color_dist = colordist(pre_color[k], opening[j, i])
-                dist_list.append(dist)
-                color_dist_list.append(color_dist)
-
-
     return result
 
 
