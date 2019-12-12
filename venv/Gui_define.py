@@ -52,8 +52,8 @@ def cal_each_y_accumulation(img):
 def find_bound(list, startline):
     startline = startline+1
     [bound] = np.shape(list)
-    if startline>=bound:
-        return None,None
+    if startline >= bound:
+        return None, None
     for i in range(startline, bound):
         if list[i] != 0:
             bound_1 = i
@@ -62,6 +62,9 @@ def find_bound(list, startline):
             # return
             return None, None
     for i in range(bound_1, bound):
+        if i == bound-1 and list[i] == 255:
+            bound_2 = i
+            break
         if list[i] == 0:
             bound_2 = i
             break
@@ -109,8 +112,10 @@ def find_total_bound(list):
     k2_list = []
     k3_list = []
     k4_list = []
-    while k1<=len(list):
-        [k1, k2] = find_bound(list,k1)
+    while k1 <= len(list):
+        if k1 == len(list)-1:
+            break
+        [k1, k2] = find_bound(list, k1)
         if k1 == None:
             break
         else:
@@ -122,26 +127,6 @@ def find_total_bound(list):
             # 平均累加值
             k4_list.append(sum(list[k1:k2]) / temp)
             k1 = k2
-
-    '''
-    while k1 != None:
-        if k1==len(list)-1:
-            k1_list.append(None)
-            k2_list.append(None)
-            break
-        [k1, k2] = find_bound(list, k1)
-
-        k1_list.append(k1)
-        k2_list.append(k2)
-        if k1==None:
-            break
-        temp=k2-k1
-        #邊界寬度
-        k3_list.append(temp)
-        #平均累加值
-        k4_list.append(sum(list[k1:k2])/temp)
-        k1 = k2
-    '''
     return k1_list, k2_list , k3_list , k4_list
 
 

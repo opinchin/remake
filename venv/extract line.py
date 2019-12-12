@@ -204,15 +204,18 @@ def dataregion_detect(image):
 
 img = cv2.imread("Grid_removed.jpg")
 [a, b, c] = np.shape(img)  # a=484 b=996,c=3
-kernel = np.ones((3, 3), np.uint8)
+kernel = np.ones((5, 5), np.uint8)
 #blur = cv2.medianBlur(img, 3)
 blur = cv2.blur(img, (3, 3))
 opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)  # BGR
-# cv2.imwrite("blurop.jpg", opening)
+# opening = cv2.erode(opening,kernel)
+opening = cv2.dilate(opening, (5, 5))
 lab_img = cv2.cvtColor(opening, cv2.COLOR_BGR2LAB)
 hsv_img = cv2.cvtColor(opening, cv2.COLOR_BGR2HSV)
 gray = cv2.cvtColor(opening, cv2.COLOR_BGR2GRAY)
 ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
+cv2.imshow("f", thresh)
+cv2.waitKey()
 # 各行的紀錄點位置
 total_pos = []
 for i in range(0, b):
@@ -220,12 +223,17 @@ for i in range(0, b):
     for j in range(0, a):  # 每一列
         pos.append(thresh[j, i])
     add_none = []  # 欲添加於Total_pos 之 List
+    [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
+    temp = [round((k1[i] + k2[i] - 1) / 2) for i in range(len(k1))]
+    total_pos.append(temp)
+    '''
     try:
         [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
         temp = [round((k1[i]+k2[i]-1)/2) for i in range(len(k1))]
         total_pos.append(temp)
     except UnboundLocalError:
-        total_pos.append(add_none)
+        total_pos.append(add_none)'''
+
 # 若該行紀錄點為空集合，則將其補上None
 for i in range(0, np.size(total_pos)):
     if not total_pos[i]:
@@ -271,15 +279,15 @@ for i in range(0, cluster_num):
     pre_locate.append([""])
     pre_color.append([])
 
-thr_value = 60
-thr1_value = 50
-thr_place = 76
-thr1_place = 114
+thr_value = 0.7
+thr1_value = 0.6
+thr_place = 164
+thr1_place = 246
 
 x_label_value_1 = 20
-x_label_place_1 = 190
+x_label_place_1 = 271
 x_label_value_2 = 25
-x_label_place_2 = 285
+x_label_place_2 = 406
 
 clustered = False
 cluster_count = 1
@@ -289,8 +297,8 @@ def place_to_value(place):
     if place == thr_place:
         value = thr_value
     else:
-        value = round(thr_value - (abs((thr_value - thr1_value)) /
-                                   abs((thr1_place - thr_place)) * (place - thr_place)))
+        value = thr_value - (abs((thr_value - thr1_value)) /
+                                   abs((thr1_place - thr_place)) * (place - thr_place))
     return value
 
 
@@ -401,6 +409,8 @@ for i in range(len(total_pos)):
                 else:
                     pass
         else:  # 假如該行紀錄點大於總分群數
+            for n in range(0, cluster_num):
+                total_cluster[n].append("")
             for j in total_pos[i]:
                 value = place_to_value(j)
                 if not clustered:
@@ -438,7 +448,7 @@ for i in range(locate+1, len(total_pos)):
                     except ValueError:
                         #if check_count >= len(total_pos[i]):
 
-                        if color_dist_list[place] < 150:
+                        if color_dist_list[place] < 125:
                             check_list.append(place)
                             check_count = check_count+1
                             #pre_color[place] = opening[j, i]
@@ -460,8 +470,8 @@ sheet2 = book.add_sheet('sheet2')
 for i, e in enumerate(x_value):
     sheet2.write(i, 0, e)
 
-for i in range(0, cluster_num):
-    correct_data(total_cluster[i])
+# for i in range(0, cluster_num):
+#     correct_data(total_cluster[i])
 
 for k in range(0, cluster_num):
     col = k+1

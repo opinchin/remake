@@ -238,8 +238,12 @@ def dataregion_detect():
         # Check
         if target1 > 0.8 * b:
             image_data = image_data[:, 0:target1 - target]
+            rightbound = target1
+        else:
+            rightbound = None
+            print("找不到右邊界")
         leftbound = target
-        rightbound = target1
+        # rightbound = target1
         # 統計每一列
         list = []
         for i in range(0, a):
@@ -263,10 +267,12 @@ def dataregion_detect():
         # Check
         if target1 < 0.9 * a:
             image_data = image_data[target1:target, :]
+            upbound = target1
         else:
+            upbound = None
             print("找不到上邊界")
         downbound = target
-        upbound = target1
+
         cv2.imshow("DataRegion",image_data)
         result = tkinter.messagebox.askokcancel("確認資料區域","結果是否於資料區域")
         if result:
@@ -396,10 +402,14 @@ def grid_detect_fun():
         grid_x = a
         Gui_define.remove_x_expected_grid(grid_removed, p1, c, a)
         print("已完成X方向網格刪除")
+    else:
+        grid_x = None
     if b != None:
         grid_y = b
         Gui_define.remove_y_expected_grid(grid_removed, p2, d, b)
         print("已完成Y方向網格刪除")
+    else:
+        grid_y = None
     grid_removed_show_close.config(state="active")
     checkgrid.config(bg='green')
     checkgrid_label.set('Define Grid')
@@ -421,13 +431,237 @@ def grid_removed_show_close_fun():
 
 
 def label_define_fun():
-    global y_label_place_1, y_label_place_2, y_label_value_1,y_label_value_2
+    global y_label_place_1, y_label_place_2, y_label_value_1, y_label_value_2
     global x_label_place_1, x_label_place_2, x_label_value_1, x_label_value_2
     x_label = origin[downbound:row, :]
     y_label = origin[:, 0:leftbound]
     x_label_fix = x_label[:, leftbound:rightbound]
     y_label_fix = y_label[upbound:downbound, :]
+    if grid_x != None:
+        print("網格之案例")
+        check_value = []
+        check_place = []
+        text = pytesseract.image_to_string(y_label_fix, lang='engB', config='--psm 6 --oem 1')
+        output = pytesseract.image_to_data(y_label_fix, lang='engB', config='--psm 6 --oem 1',
+                                           output_type=pytesseract.Output.DICT)
 
+        num_boxes = len(output['level'])
+        for i in range(0, num_boxes):
+            try:
+                k = float(output['text'][i])
+                (x, y, w, h) = (output['left'][i], output['top'][i], output['width'][i],
+                                output['height'][i])
+                if abs((y + h / 2) / grid_x - round((y + h / 2) / grid_x)) < 0.15:
+                    check_value.append(k)
+                    check_place.append(int(round((y + h / 2) / grid_x)))
+            except ValueError:
+                pass
+        check = []
+        check_place_ = []
+        find_or_not = False
+        for i in range(0, len(check_value)):
+            if find_or_not:
+                break
+            else:
+                check[:] = [abs(x - check_value[i]) for x in check_value]
+                k = 0 - check_place[check.index(0)]
+                check_place_[:] = [x + k for x in check_place]
+                for j in range(0, len(check_value)):
+                    try:
+                        check[j] = abs(check[j] / check_place_[j])
+                    except ZeroDivisionError:
+                        pass
+                for j in set(check):
+                    if check.count(j) >= math.floor(len(check_value) / 2):
+                        print("Label Define")
+                        thr_value = check_value[check.index(j)]
+                        thr_place = grid_x * check_place[check.index(j)]
+                        check[check.index(j)] = 0
+                        thr1_value = check_value[check.index(j)]
+                        thr1_place = grid_x * check_place[check.index(j)]
+                        find_or_not = True
+                        break
+        y_label_place_1 = thr_place
+        y_label_value_1 = thr_value
+        y_label_place_2 = thr1_place
+        y_label_value_2 = thr1_value
+        print("Y軸Label參考點一:位於", y_label_place_1, "Value = ", y_label_value_1)
+        print("Y軸Label參考點二:位於", y_label_place_2, "Value = ", y_label_value_2)
+    else:
+        text = pytesseract.image_to_string(y_label_fix, lang='engB', config='--psm 6 --oem 1')
+        out1 = pytesseract.image_to_data(y_label_fix, lang='engB', config='--psm 6 --oem 1',
+                                         output_type=pytesseract.Output.DICT)
+        check_place = []
+        check_value = []
+        check_place_ = []
+        check_dist = []
+        num_boxes = len(out1['level'])
+        for i in range(0, num_boxes):
+            try:
+                k = float(out1['text'][i])
+                (x, y, w, h) = (out1['left'][i], out1['top'][i], out1['width'][i], out1['height'][i])
+                check_value.append(k)
+                # check_place.append(y)
+                check_place.append(round((y + h / 2)))
+                cv2.rectangle(y_label_fix, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                # print(k, "=", x, y, w, h)
+            except ValueError:
+                pass
+        find_or_not = False
+        for i in check_place:
+            if find_or_not:
+                break
+            check_dist[:] = [x - i for x in check_place]
+            temp = check_dist.index(0)
+            if temp + 1 != len(check_place):
+                check_dist[:] = [abs(x / check_dist[temp + 1]) for x in check_dist]
+                for i in range(0, len(check_dist)):
+                    k = abs(check_dist[i] - round(check_dist[i]))
+                    if k < 0.1:
+                        check_dist[i] = round(check_dist[i])
+                    else:
+                        check_dist[i] = ''
+                k = check_dist.index(0)
+                check_value_ = check_value.copy()
+                check = check_value.copy()
+                check_value_[:] = [abs(Decimal(str(x)) - Decimal(str(check_value[k])))
+                                   for x in check_value]
+                # print(check_value_)
+                # print(check_dist)
+                for j in range(0, len(check_value)):
+                    try:
+                        check[j] = float((check_value_[j]) / check_dist[j])
+                    except:
+                        pass
+                for j in set(check):
+                    if check.count(j) >= math.floor(len(check_value) / 2):
+                        print("Label Define")
+                        thr_value = check_value[check.index(j)]
+                        thr_place = check_place[check.index(j)]
+                        check[check.index(j)] = 0
+                        thr1_value = check_value[check.index(j)]
+                        thr1_place = check_place[check.index(j)]
+                        find_or_not = True
+                        break
+                print(check)
+        y_label_place_1 = thr_place
+        y_label_value_1 = thr_value
+        y_label_place_2 = thr1_place
+        y_label_value_2 = thr1_value
+        print("Y軸Label參考點一:位於", y_label_place_1, "Value = ", y_label_value_1)
+        print("Y軸Label參考點二:位於", y_label_place_2, "Value = ", y_label_value_2)
+
+    if grid_y != None:
+        output = pytesseract.image_to_data(x_label_fix, lang='engB', config='--psm 6 --oem 1',
+                                           output_type=pytesseract.Output.DICT)
+        check_value = []
+        check_place = []
+        num_boxes = len(output['level'])
+        for i in range(0, num_boxes):
+            try:
+                k = float(output['text'][i])
+                (x, y, w, h) = (output['left'][i], output['top'][i], output['width'][i],
+                                output['height'][i])
+                if abs((x + w / 2) / grid_y - round((x + w / 2) / grid_y)) < 0.15:
+                    check_value.append(k)
+                    check_place.append(int(round((x + w / 2) / grid_y)))
+            except ValueError:
+                pass
+
+        check = []
+        check_place_ = []
+        find_or_not = False
+        for i in range(0, len(check_value)):
+            if find_or_not:
+                break
+            else:
+             check[:] = [abs(x - check_value[i]) for x in check_value]
+             k = 0 - check_place[check.index(0)]
+             check_place_[:] = [x + k for x in check_place]
+            for j in range(0, len(check_value)):
+                try:
+                    check[j] = abs(check[j] / check_place_[j])
+                except ZeroDivisionError:
+                     pass
+            for j in set(check):
+                if check.count(j) >= math.floor(len(check_value) / 2):
+                    print("Label Define")
+                    thr_value = check_value[check.index(j)]
+                    thr_place = grid_y * check_place[check.index(j)]
+                    check[check.index(j)] = 0
+                    thr1_value = check_value[check.index(j)]
+                    thr1_place = grid_y * check_place[check.index(j)]
+                    find_or_not = True
+                    break
+        x_label_place_1 = thr_place
+        x_label_value_1 = thr_value
+        x_label_place_2 = thr1_place
+        x_label_value_2 = thr1_value
+        print("X軸Label參考點一:位於", x_label_place_1, "Value = ", x_label_value_1)
+        print("X軸Label參考點二:位於", x_label_place_2, "Value = ", x_label_value_2)
+    else:
+        out1 = pytesseract.image_to_data(x_label_fix, lang='engB', config='--psm 6 --oem 1',
+                                         output_type=pytesseract.Output.DICT)
+        check_place = []
+        check_value = []
+        check_place_ = []
+        check_dist = []
+        num_boxes = len(out1['level'])
+        for i in range(0, num_boxes):
+            try:
+                k = float(out1['text'][i])
+                (x, y, w, h) = (out1['left'][i], out1['top'][i], out1['width'][i], out1['height'][i])
+                check_value.append(k)
+                check_place.append(round((x + w / 2)))
+            except ValueError:
+                pass
+        find_or_not = False
+        for i in check_place:
+            if find_or_not:
+                break
+            check_dist[:] = [x - i for x in check_place]
+            temp = check_dist.index(0)
+            if temp + 1 != len(check_place):
+                check_dist[:] = [abs(x / check_dist[temp + 1]) for x in check_dist]
+                for i in range(0, len(check_dist)):
+                    k = abs(check_dist[i] - round(check_dist[i]))
+                    if k < 0.1:
+                        check_dist[i] = round(check_dist[i])
+                    else:
+                        check_dist[i] = ''
+                k = check_dist.index(0)
+                check_value_ = check_value.copy()
+                check = check_value.copy()
+                check_value_[:] = [abs(Decimal(str(x)) - Decimal(str(check_value[k])))
+                                   for x in check_value]
+                for j in range(0, len(check_value)):
+                    try:
+                        check[j] = float((check_value_[j]) / check_dist[j])
+                    except:
+                        pass
+                for j in set(check):
+                    if check.count(j) >= math.floor(len(check_value) / 2):
+                        print("Label Define")
+                        thr_value = check_value[check.index(j)]
+                        thr_place = check_place[check.index(j)]
+                        check[check.index(j)] = 0
+                        thr1_value = check_value[check.index(j)]
+                        thr1_place = check_place[check.index(j)]
+                        find_or_not = True
+                        break
+                print(check)
+        x_label_place_1 = thr_place
+        x_label_value_1 = thr_value
+        x_label_place_2 = thr1_place
+        x_label_value_2 = thr1_value
+        print("X軸Label參考點一:位於", x_label_place_1, "Value = ", x_label_value_1)
+        print("X軸Label參考點二:位於", x_label_place_2, "Value = ", x_label_value_2)
+
+
+
+
+
+    '''
     if grid_x and grid_y != None:
         print("網格之案例")
         check_value = []
@@ -445,14 +679,6 @@ def label_define_fun():
                     check_place.append(int(round((y + h / 2) / grid_x)))
             except ValueError:
                 pass
-            '''
-            if not output['text'][i].isdigit():
-                pass
-            else:
-                (x, y, w, h) = (output['left'][i], output['top'][i], output['width'][i], output['height'][i])
-                if abs((y + h / 2) / grid_x - round((y + h / 2) / grid_x)) < 0.1:
-                    check_value.append(int(output['text'][i]))
-                    check_place.append(int(round((y + h / 2) / grid_x)))'''
         check = []
         check_place_ = []
         find_or_not = False
@@ -500,7 +726,8 @@ def label_define_fun():
                     check_place.append(int(round((x + w / 2) / grid_y)))
             except ValueError:
                 pass
-            '''
+        '''
+    '''
             if not output['text'][i].isdigit():
                 pass
             else:
@@ -508,6 +735,7 @@ def label_define_fun():
                 if abs((x + w / 2) / grid_y - round((x + w / 2) / grid_y)) < 0.1:
                     check_value.append(int(output['text'][i]))
                     check_place.append(int(round((x + w / 2) / grid_y)))'''
+    '''
         check = []
         check_place_ = []
         find_or_not = False
@@ -540,7 +768,127 @@ def label_define_fun():
         print("X軸Label參考點一:位於", x_label_place_1, "Value = ", x_label_value_1)
         print("X軸Label參考點二:位於", x_label_place_2, "Value = ", x_label_value_2)
     else:
-        pass
+        text = pytesseract.image_to_string(y_label_fix, lang='engB', config='--psm 6 --oem 1')
+        out1 = pytesseract.image_to_data(y_label_fix, lang='engB', config='--psm 6 --oem 1',
+                                         output_type=pytesseract.Output.DICT)
+        check_place = []
+        check_value = []
+        check_place_ = []
+        check_dist = []
+        num_boxes = len(out1['level'])
+        for i in range(0, num_boxes):
+            try:
+                k = float(out1['text'][i])
+                (x, y, w, h) = (out1['left'][i], out1['top'][i], out1['width'][i], out1['height'][i])
+                check_value.append(k)
+                # check_place.append(y)
+                check_place.append(round((y + h / 2)))
+                cv2.rectangle(y_label_fix, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                # print(k, "=", x, y, w, h)
+            except ValueError:
+                pass
+        find_or_not = False
+        for i in check_place:
+            if find_or_not:
+                break
+            check_dist[:] = [x - i for x in check_place]
+            temp = check_dist.index(0)
+            if temp + 1 != len(check_place):
+                check_dist[:] = [abs(x / check_dist[temp + 1]) for x in check_dist]
+                for i in range(0, len(check_dist)):
+                    k = abs(check_dist[i] - round(check_dist[i]))
+                    if k < 0.1:
+                        check_dist[i] = round(check_dist[i])
+                    else:
+                        check_dist[i] = ''
+                k = check_dist.index(0)
+                check_value_ = check_value.copy()
+                check = check_value.copy()
+                check_value_[:] = [abs(Decimal(str(x)) - Decimal(str(check_value[k])))
+                                   for x in check_value]
+                # print(check_value_)
+                # print(check_dist)
+                for j in range(0, len(check_value)):
+                    try:
+                        check[j] = float((check_value_[j]) / check_dist[j])
+                    except:
+                        pass
+                for j in set(check):
+                    if check.count(j) >= math.floor(len(check_value) / 2):
+                        print("Label Define")
+                        thr_value = check_value[check.index(j)]
+                        thr_place = check_place[check.index(j)]
+                        check[check.index(j)] = 0
+                        thr1_value = check_value[check.index(j)]
+                        thr1_place = check_place[check.index(j)]
+                        find_or_not = True
+                        break
+                print(check)
+        y_label_place_1 = thr_place
+        y_label_value_1 = thr_value
+        y_label_place_2 = thr1_place
+        y_label_value_2 = thr1_value
+        print("Y軸Label參考點一:位於", thr_place, "Value = ", thr_value)
+        print("Y軸Label參考點二:位於", thr1_place, "Value = ", thr1_value)
+
+        text = pytesseract.image_to_string(x_label_fix, lang='engB', config='--psm 6 --oem 1')
+        out1 = pytesseract.image_to_data(x_label_fix, lang='engB', config='--psm 6 --oem 1',
+                                         output_type=pytesseract.Output.DICT)
+        check_place = []
+        check_value = []
+        check_place_ = []
+        check_dist = []
+        num_boxes = len(out1['level'])
+        for i in range(0, num_boxes):
+            try:
+                k = float(out1['text'][i])
+                (x, y, w, h) = (out1['left'][i], out1['top'][i], out1['width'][i], out1['height'][i])
+                check_value.append(k)
+                check_place.append(round((x + w / 2)))
+            except ValueError:
+                pass
+        find_or_not = False
+        for i in check_place:
+            if find_or_not:
+                break
+            check_dist[:] = [x - i for x in check_place]
+            temp = check_dist.index(0)
+            if temp + 1 != len(check_place):
+                check_dist[:] = [abs(x / check_dist[temp + 1]) for x in check_dist]
+                for i in range(0, len(check_dist)):
+                    k = abs(check_dist[i] - round(check_dist[i]))
+                    if k < 0.1:
+                        check_dist[i] = round(check_dist[i])
+                    else:
+                        check_dist[i] = ''
+                k = check_dist.index(0)
+                check_value_ = check_value.copy()
+                check = check_value.copy()
+                check_value_[:] = [abs(Decimal(str(x)) - Decimal(str(check_value[k])))
+                                   for x in check_value]
+                for j in range(0, len(check_value)):
+                    try:
+                        check[j] = float((check_value_[j]) / check_dist[j])
+                    except:
+                        pass
+                for j in set(check):
+                    if check.count(j) >= math.floor(len(check_value) / 2):
+                        print("Label Define")
+                        thr_value = check_value[check.index(j)]
+                        thr_place = check_place[check.index(j)]
+                        check[check.index(j)] = 0
+                        thr1_value = check_value[check.index(j)]
+                        thr1_place = check_place[check.index(j)]
+                        find_or_not = True
+                        break
+                print(check)
+        x_label_place_1 = thr_place
+        x_label_value_1 = thr_value
+        x_label_place_2 = thr1_place
+        x_label_value_2 = thr1_value
+        print("X軸Label參考點一:位於", thr_place, "Value = ", thr_value)
+        print("X軸Label參考點二:位於", thr1_place, "Value = ", thr1_value)
+        '''
     data_extract.config(state='active')
     checkvalue_label.set("Define Value")
     checkvalue.config(bg='green')
@@ -619,11 +967,12 @@ def data_extract_fun():
         if loc == y_label_place_1:
             value_ = y_label_value_1
         else:
-            value_ = round(y_label_value_1 - (abs((y_label_value_1 - y_label_value_2)) /
-                                       abs((y_label_place_1 - y_label_place_2)) * (loc - y_label_place_1)))
+            value_ = y_label_value_1 - (abs((y_label_value_1 - y_label_value_2)) /
+                                       abs((y_label_place_1 - y_label_place_2)) * (loc - y_label_place_1))
         return np.float(value_)
 
     def x_label_to_value(loc):
+
         if loc == x_label_place_1:
             value_ = x_label_value_1
         else:
@@ -662,8 +1011,11 @@ def data_extract_fun():
         # 空集合不分群
         if cluster_count == cluster_num + 1:
             break
-        value = x_label_to_value(i)
-        x_value.append(value)
+        try:
+            value = x_label_to_value(i)
+            x_value.append(value)
+        except:
+            pass
         if total_pos[i] == [None]:
             for n in range(0, cluster_num):
                 total_cluster[n].append("")
@@ -697,8 +1049,11 @@ def data_extract_fun():
                     else:
                         pass
     for i in range(locate + 1, len(total_pos)):
-        value = x_label_to_value(i)
-        x_value.append(value)
+        try:
+            value = x_label_to_value(i)
+            x_value.append(value)
+        except:
+            pass
         if total_pos[i] == [None]:
             for n in range(0, cluster_num):
                 total_cluster[n].append("")
@@ -739,8 +1094,12 @@ def data_extract_fun():
                     total_cluster[l].append("")
 
     sheet2 = book.add_sheet('after extracting')
-    for i, e in enumerate(x_value):
-        sheet2.write(i, 0, e)
+    try:
+        for i, e in enumerate(x_value):
+            sheet2.write(i, 0, e)
+    except:
+        print(x_value)
+        pass
     for i in range(0, cluster_num):
         Gui_define.correct_data(total_cluster[i])
     for k in range(0, cluster_num):
