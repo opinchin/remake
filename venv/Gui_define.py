@@ -116,6 +116,16 @@ def find_total_bound(list):
         if k1 == len(list)-1:
             break
         [k1, k2] = find_bound(list, k1)
+        if k1 == k2 and k1 == len(list)-1:
+            k1_list.append(k1-1)
+            k2_list.append(k2)
+            temp = 1
+            # 邊界寬度
+            k3_list.append(temp)
+            # 平均累加值
+            k4_list.append(sum(list[k1:k2]) / temp)
+            break
+
         if k1 == None:
             break
         else:

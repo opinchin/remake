@@ -202,7 +202,7 @@ def dataregion_detect(image):
     return up_bound, down_bound, left_bound, right_bound
 
 
-img = cv2.imread("Grid_removed.jpg")
+img = cv2.imread("Grid_ removed_f.jpg")
 [a, b, c] = np.shape(img)  # a=484 b=996,c=3
 kernel = np.ones((5, 5), np.uint8)
 #blur = cv2.medianBlur(img, 3)
@@ -214,8 +214,8 @@ lab_img = cv2.cvtColor(opening, cv2.COLOR_BGR2LAB)
 hsv_img = cv2.cvtColor(opening, cv2.COLOR_BGR2HSV)
 gray = cv2.cvtColor(opening, cv2.COLOR_BGR2GRAY)
 ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
-cv2.imshow("f", thresh)
-cv2.waitKey()
+# cv2.imshow("f", thresh)
+# cv2.waitKey()
 # 各行的紀錄點位置
 total_pos = []
 for i in range(0, b):
@@ -226,6 +226,7 @@ for i in range(0, b):
     [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
     temp = [round((k1[i] + k2[i] - 1) / 2) for i in range(len(k1))]
     total_pos.append(temp)
+    print(i)
     '''
     try:
         [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
@@ -271,12 +272,14 @@ print("分成", cluster_num, "類")
 # 分群對應值 與 分群參考點 之初始化
 total_cluster = []
 pre_locate = []
+temp_locate = []
 pre_color = []
 x_value = []
 for i in range(0, cluster_num):
     # x_value.append([])
     total_cluster.append([])
     pre_locate.append([""])
+    temp_locate.append([""])
     pre_color.append([])
 
 thr_value = 0.7
@@ -448,8 +451,8 @@ for i in range(locate+1, len(total_pos)):
                 if element < 20:
                     place = a
                     try:
-                        if check_list.index(place):
-                            print("有重疊的值，於座標(", j, i, ")")
+                        try_y = check_list.index(place)
+                        print("有重疊的值，於座標(", j, i, ")",place)
 
                     except ValueError:
                         #if check_count >= len(total_pos[i]):
@@ -459,13 +462,16 @@ for i in range(locate+1, len(total_pos)):
                             check_count = check_count+1
                             #pre_color[place] = opening[j, i]
                             #pre_color[place] = lab_img[j, i]
-                            pre_locate[place] = j
+                            temp_locate[place] = j
                             total_cluster[place].append(value)
                             break
                         else:
-                            print("未歸類的值，於座標(", j, i, ")", place)
-
+                            pass
+                            #print("未歸類的值，於座標(", j, i, ")", place)
+        for k in range(0, cluster_num):
+            pre_locate[k] = temp_locate[k]
         for l in range(0, cluster_num):
+            #pre_locate[l] = temp_locate[l]
             try:
                 check_list.index(l)
             except ValueError:

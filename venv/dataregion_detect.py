@@ -25,17 +25,20 @@ def dataregion_detect(image):
     # 由左至右找尋符合邊界(X軸)
     for i in range(0, b):
         if abs(list[i] - max(list)) < a/30:
-            target = i
-            break
+            if abs(list[i+1] - max(list)) > a/30:
+                target = i+1
+                break
     left_bound = target
     print(left_bound)
+
     # X軸
-    image_data = img[:, target:b]
+    image_data = img[:, left_bound:b]
     # 由右至左找尋有無右邊界
     for i in range(b - 1, 0, -1):
         if abs(list[i] - max(list)) < a/30:
-            target1 = i
-            break
+            if abs(list[i-1] - max(list)) > a / 30:
+                target1 = i
+                break
 
     # Check
     if target1 > 0.8 * b:
@@ -52,16 +55,18 @@ def dataregion_detect(image):
     # 由下至上找尋符合邊界(Y軸)
     for i in range(a, 0, -1):
         if abs(list[i - 1] - max(list)) < b/30:
-            target = i
-            break
+            if abs(list[i - 2] - max(list)) > b / 30:
+                target = i
+                break
     down_bound = target
     # Y軸
     image_data = image_data[0:target, :]
     # 由上至下找尋有無上邊界
     for i in range(0, a):
         if abs(list[i] - max(list)) < b/30:
-            target1 = i
-            break
+            if abs(list[i+1] - max(list)) > b / 30:
+                target1 = i
+                break
 
     # Check
     if target1 < 0.9 * a:

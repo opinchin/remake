@@ -214,8 +214,8 @@ lab_img = cv2.cvtColor(opening, cv2.COLOR_BGR2LAB)
 hsv_img = cv2.cvtColor(opening, cv2.COLOR_BGR2HSV)
 gray = cv2.cvtColor(opening, cv2.COLOR_BGR2GRAY)
 ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
-cv2.imshow("f", thresh)
-cv2.waitKey()
+# cv2.imshow("f", thresh)
+# cv2.waitKey()
 # 各行的紀錄點位置
 total_pos = []
 for i in range(0, b):
@@ -444,18 +444,15 @@ for i in range(locate + 1, len(total_pos)):
             for a, element in enumerate(dist_list):
                 if element < 20:
                     place = a
-                    if color_dist_list[place] < 125:
-                        check_list.append(place)
-                        check_count = check_count + 1
-                        pre_locate[place] = j
-                        total_cluster[place].append(value)
                     try:
                         if check_list.index(place):
-                            print("有重疊的值，於座標(", j, i, ")")
-
+                            print("有重疊的值，於座標(", j, i, ")",place)
                     except ValueError:
-                        pass
-
+                        if color_dist_list[place] < 125:
+                            check_list.append(place)
+                            check_count = check_count + 1
+                            pre_locate[place] = j
+                            total_cluster[place].append(value)
 
         for l in range(0, cluster_num):
             try:
@@ -485,4 +482,4 @@ try:
 except PermissionError:
     print("請關閉Excel後存檔")
     pass
-
+print("finish")
