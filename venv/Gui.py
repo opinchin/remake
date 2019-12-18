@@ -224,28 +224,29 @@ def dataregion_detect():
                     count = count + 1
             list.append(count)
         # 由左至右找尋符合邊界(X軸)
-        # for i in range(0, b):
-        #     if abs(list[i] - max(list)) < a/30:
-        #         target = i
-        #         break
         for i in range(0, b):
-            if abs(list[i] - max(list)) < a / 30:
-                if abs(list[i + 1] - max(list)) > a / 30:
-                    target = i + 1
-                    break
-
+            if abs(list[i] - max(list)) < a/30:
+                target = i
+                break
+        # for i in range(0, b):
+        #     if abs(list[i] - max(list)) < a / 30:
+        #         if abs(list[i + 1] - max(list)) > a / 30:
+        #             target = i + 1
+        #
+        #             break
+        leftbound = target
         # Y軸
         image_data = origin[:, target:b]
         # 由右至左找尋有無右邊界
-        # for i in range(b - 1, 0, -1):
-        #     if abs(list[i] - max(list)) < a/30:
-        #         target1 = i
-        #         break
         for i in range(b - 1, 0, -1):
-            if abs(list[i] - max(list)) < a / 30:
-                if abs(list[i - 1] - max(list)) > a / 30:
-                    target1 = i
-                    break
+            if abs(list[i] - max(list)) < a/30:
+                target1 = i
+                break
+        # for i in range(b - 1, 0, -1):
+        #     if abs(list[i] - max(list)) < a / 30:
+        #         if abs(list[i - 1] - max(list)) > a / 30:
+        #             target1 = i
+        #             break
         # Check
         if target1 > 0.8 * b:
             image_data = image_data[:, 0:target1 - target]
@@ -253,7 +254,7 @@ def dataregion_detect():
         else:
             rightbound = None
             print("找不到右邊界")
-        leftbound = target
+
         # rightbound = target1
         # 統計每一列
         list = []
@@ -271,15 +272,19 @@ def dataregion_detect():
         for i in range(a, 0, -1):
             if abs(list[i - 1] - max(list)) < b / 30:
                 if abs(list[i - 2] - max(list)) > b / 30:
-                    target = i
+                    target = i-1
                     break
         # X軸
         image_data = image_data[0:target, :]
         # 由上至下找尋有無上邊界
         for i in range(0, a):
+            # if abs(list[i] - max(list)) < b / 30:
+            #     target1 = i
+            #     break
             if abs(list[i] - max(list)) < b / 30:
                 if abs(list[i + 1] - max(list)) > b / 30:
-                    target1 = i
+                    target1 = i+1
+                    # target1 = i
                     break
         # Check
         if target1 < 0.9 * a:
@@ -914,15 +919,15 @@ def label_define_fun():
 def data_extract_fun():
     img = grid_removed
     [a, b, c] = np.shape(img)  # a=484 b=996,c=3
-    kernel = np.ones((3, 3), np.uint8)
+    kernel = np.ones((5, 5), np.uint8)
     blur = cv2.blur(img, (3, 3))
     opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)  # BGR
-    lab_img = cv2.cvtColor(opening, cv2.COLOR_BGR2LAB)
-    hsv_img = cv2.cvtColor(opening, cv2.COLOR_BGR2HSV)
+    cv2.imwrite("opening.jpg", opening)
+    # cv2.imwrite("thr",)
     gray = cv2.cvtColor(opening, cv2.COLOR_BGR2GRAY)
     ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
-    cv2.imshow(",",thresh)
-    cv2.waitKey()
+    # cv2.imshow(",",thresh)
+    # cv2.waitKey()
     # 各行的紀錄點位置
     total_pos = []
     for i in range(0, b):
@@ -973,11 +978,13 @@ def data_extract_fun():
     total_cluster = []
     pre_locate = []
     pre_color = []
+    temp_locate = []
     x_value = []
     for i in range(0, cluster_num):
         # x_value.append([])
         total_cluster.append([])
         pre_locate.append([""])
+        temp_locate.append([""])
         pre_color.append([])
     clustered = False
     cluster_count = 1
@@ -1008,12 +1015,13 @@ def data_extract_fun():
         r_2 = float(r_2)
         g_2 = float(g_2)
         b_2 = float(b_2)
-        avg_1 = (b_1 + g_1 + r_1) / 3
-        avg_2 = (b_2 + g_2 + r_2) / 3
-        gray_1 = np.sqrt((b_1 - avg_1) ** 2 + (g_1 - avg_1) ** 2 + (r_1 - avg_1) ** 2)
-        gray_2 = np.sqrt((b_2 - avg_2) ** 2 + (g_2 - avg_2) ** 2 + (r_2 - avg_2) ** 2)
-        if abs(gray_1 - gray_2) < 3:
-            return 0
+        if abs(b_1-g_1) and abs(g_1 - r_1) and (b_1 - r_1) < 20:
+            avg_1 = (b_1 + g_1 + r_1) / 3
+            avg_2 = (b_2 + g_2 + r_2) / 3
+            gray_1 = np.sqrt((b_1 - avg_1) ** 2 + (g_1 - avg_1) ** 2 + (r_1 - avg_1) ** 2)
+            gray_2 = np.sqrt((b_2 - avg_2) ** 2 + (g_2 - avg_2) ** 2 + (r_2 - avg_2) ** 2)
+            if abs(gray_1 - gray_2) < 3:
+                return 0
         rmean = (r_1 + r_2) / 2
         r = r_1 - r_2
         g = g_1 - g_2
@@ -1024,6 +1032,46 @@ def data_extract_fun():
         l_1, a_1, b_1 = lab_1
         l_2, a_2, b_2 = lab_2
         return np.sqrt((l_1 - l_2) ** 2 + (a_1 - a_2) ** 2 + (b_1 - b_2) ** 2)
+
+    def expect_locate(in_which_cluster, in_which_col):
+        ones = False
+
+        # for i in range(in_which_col, len(total_pos)):
+        #     if len(total_pos[i]) == cluster_num:
+        #         if ones:
+        #             ones = False
+        #             break
+        #         for j in total_pos[i]:
+        #             color_dist = colordist(pre_color[in_which_cluster], opening[j, i])
+        #             if color_dist < 125 and not ones:
+        #                 end = j
+        #                 end_place = i - 1  # 38
+        #                 ones = True
+        #                 count = i - (in_which_col - 1)
+        #                 break
+        if in_which_col == len(total_pos):
+            return
+        for i in range(in_which_col, len(total_pos)):
+            dist = []
+            if i == len(total_pos)-1:
+                return
+            if len(total_pos[i]) == cluster_num:
+                for j in total_pos[i]:
+                    color_dist = colordist(pre_color[in_which_cluster], opening[j, i])
+                    dist.append(color_dist)
+                place = dist.index(min(dist))
+                end = total_pos[i][place]
+                end_place = i - 1
+                count = i - (in_which_col - 1)
+                break
+
+        for i in range(0, count):
+            dist = []
+            dist[:] = [abs(end - x) for x in total_pos[end_place]]
+            place = dist.index(min(dist))  # 1
+            end = total_pos[end_place][place]
+            end_place = end_place - 1
+        return end
 
     # 將每一行記錄點再次分群，目的是將每一條線條歸類為獨立分群，是為分群對應值，並且對應圖表上的原始資料，可作圖
     for i in range(len(total_pos)):
@@ -1067,6 +1115,7 @@ def data_extract_fun():
                         pass
                     else:
                         pass
+    times = 0
     for i in range(locate + 1, len(total_pos)):
         try:
             value = x_label_to_value(i)
@@ -1088,25 +1137,85 @@ def data_extract_fun():
                     color_dist = colordist(pre_color[k], opening[j, i])
                     dist_list.append(dist)
                     color_dist_list.append(color_dist)
-                for a, element in enumerate(dist_list):
-                    if element < 20:
+                # for a, element in enumerate(dist_list):
+                #     if element < 20:
+                #         place = a
+                #         try:
+                #             if check_list.index(place):
+                #                 pass
+                #                 # print("有重疊的值，於座標(", j, i, ")")
+                #         except ValueError:
+                #             if color_dist_list[place] < 150:
+                #                 check_list.append(place)
+                #                 check_count = check_count + 1
+                #                 # temp_locate[place] = j
+                #                 pre_locate[place] = j
+                #                 total_cluster[place].append(value)
+                #                 break
+                #             else:
+                #                 pass
+                                # print("未歸類的值，於座標(", j, i, ")", place)
+                # place = color_dist_list.index(min(color_dist_list))
+                # if min(color_dist_list) < 125 and dist_list[place] < 20:
+                #     check_list.append(place)
+                #     temp_locate[place] = j
+                #     total_cluster[place].append(value)
+                #     break
+                # else:
+                #     for a, element in enumerate(color_dist_list):
+                #         if element < 125 and dist_list[a] < 20:
+                #             place = a
+                #         try:
+                #             try_y = check_list.index(place)
+                #             fix = expect_locate(place, i + 1)
+                #             total_cluster[place].pop()
+                #             total_cluster.append(fix)
+                #             temp_locate[place] = fix
+                #         except ValueError:
+                #             check_list.append(place)
+                #             check_count = check_count + 1
+                #             temp_locate[place] = j
+                #             total_cluster[place].append(value)
+                #             break
+                if len(total_pos[i]) == cluster_num:
+                    place = color_dist_list.index(min(color_dist_list))
+                    if min(color_dist_list) < 125 and dist_list[place] < 25:
+                        check_list.append(place)
+                        temp_locate[place] = j
+                        total_cluster[place].append(value)
+                        continue
+                for a, element in enumerate(color_dist_list):
+                    if element < 125 and dist_list[a] < 25:
                         place = a
                         try:
-                            if check_list.index(place):
+                            try_y = check_list.index(place)
+                            times = times+1
+
+                            # fix = expect_locate(place, i + 1)
+                            # print(times, i, fix)
+                            try:
+                                if abs(fix - pre_locate[a]) < 20:
+                                    value = place_to_value(fix)
+                                    total_cluster[place].pop()
+                                    total_cluster[place].append(value)
+                                    temp_locate[place] = fix
+                            except:
                                 pass
-                                # print("有重疊的值，於座標(", j, i, ")")
+
                         except ValueError:
-                            if color_dist_list[place] < 150:
-                                check_list.append(place)
-                                check_count = check_count + 1
-                                pre_locate[place] = j
-                                total_cluster[place].append(value)
-                                break
-                            else:
-                                pass
-                                # print("未歸類的值，於座標(", j, i, ")", place)
+
+                            check_list.append(place)
+                            check_count = check_count + 1
+                            temp_locate[place] = j
+                            total_cluster[place].append(value)
+                            break
+
 
             for l in range(0, cluster_num):
+                if temp_locate[l] == ['']:
+                    pass
+                else:
+                    pre_locate[l] = temp_locate[l]
                 try:
                     check_list.index(l)
                 except ValueError:
@@ -1135,6 +1244,7 @@ def data_extract_fun():
     except PermissionError:
         print("請關閉Excel後存檔")
         pass
+    print("Finish Extracting")
 
 
 # ESC KEY

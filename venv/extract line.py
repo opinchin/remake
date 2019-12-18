@@ -202,7 +202,8 @@ def dataregion_detect(image):
     return up_bound, down_bound, left_bound, right_bound
 
 
-img = cv2.imread("Grid_ removed_f.jpg")
+
+img = cv2.imread("black_grid.jpg")
 [a, b, c] = np.shape(img)  # a=484 b=996,c=3
 kernel = np.ones((5, 5), np.uint8)
 #blur = cv2.medianBlur(img, 3)
@@ -214,6 +215,7 @@ lab_img = cv2.cvtColor(opening, cv2.COLOR_BGR2LAB)
 hsv_img = cv2.cvtColor(opening, cv2.COLOR_BGR2HSV)
 gray = cv2.cvtColor(opening, cv2.COLOR_BGR2GRAY)
 ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
+cv2.imwrite("t.jpg",thresh)
 # cv2.imshow("f", thresh)
 # cv2.waitKey()
 # 各行的紀錄點位置
@@ -226,7 +228,6 @@ for i in range(0, b):
     [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
     temp = [round((k1[i] + k2[i] - 1) / 2) for i in range(len(k1))]
     total_pos.append(temp)
-    print(i)
     '''
     try:
         [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
@@ -282,15 +283,15 @@ for i in range(0, cluster_num):
     temp_locate.append([""])
     pre_color.append([])
 
-thr_value = 0.7
-thr1_value = 0.6
-thr_place = 164
-thr1_place = 246
+thr_value = 80
+thr1_value = 60
+thr_place = 143
+thr1_place = 215
 
-x_label_value_1 = 20
-x_label_place_1 = 271
-x_label_value_2 = 25
-x_label_place_2 = 406
+x_label_value_1 = 1
+x_label_place_1 = 54
+x_label_value_2 = 2
+x_label_place_2 = 160
 
 clustered = False
 cluster_count = 1
@@ -423,9 +424,33 @@ for i in range(len(total_pos)):
 
 
 def expect_locate(in_which_cluster, in_which_col):
-    return result
+    ones = False
+    for i in range(in_which_col, len(total_pos)):
+        if len(total_pos[i]) == cluster_num:
+            if ones:
+                ones = False
+                break
+            for j in total_pos[i]:
+                color_dist = colordist(pre_color[in_which_cluster], opening[j, i])
+                if color_dist < 125 and not ones:
+                    end = j
+                    end_place = i-1 # 38
+                    ones = True
+                    print(end, in_which_col-1,"to",end_place ,in_which_cluster)
+                    count = i - (in_which_col-1)
+                    break
+    for i in range(0, count):
+        dist=[]
+        dist[:] = [abs(end - x) for x in total_pos[end_place]]
+        place = dist.index(min(dist))  # 1
+        end = total_pos[end_place][place]
+        end_place = end_place - 1
+    return end
 
 
+
+
+countt=0
 #for i in range(locate+1, 241):
 for i in range(locate+1, len(total_pos)):
     value = x_label_to_value(i)
@@ -447,27 +472,51 @@ for i in range(locate+1, len(total_pos)):
                 #print(color_dist)
                 dist_list.append(dist)
                 color_dist_list.append(color_dist)
-            for a, element in enumerate(dist_list):
-                if element < 20:
+            # for a, element in enumerate(dist_list):
+            #     if element < 20:
+            #         place = a
+            #         try:
+            #             try_y = check_list.index(place)
+            #             print("有重疊的值，於座標(", j, i, ")", place)
+            #             # 修正重疊的值
+            #
+            #
+            #         except ValueError:
+            #             #if check_count >= len(total_pos[i]):
+            #
+            #             if color_dist_list[place] < 125:
+            #                 check_list.append(place)
+            #                 check_count = check_count+1
+            #                 #pre_color[place] = opening[j, i]
+            #                 #pre_color[place] = lab_img[j, i]
+            #                 temp_locate[place] = j
+            #                 total_cluster[place].append(value)
+            #                 break
+            #             else:
+            #                 pass
+            #                 #print("未歸類的值，於座標(", j, i, ")", place)
+            for a, element in enumerate(color_dist_list):
+                if element < 125 and dist_list[a] < 20:
                     place = a
                     try:
                         try_y = check_list.index(place)
-                        print("有重疊的值，於座標(", j, i, ")",place)
+                        # print("有重疊的值，於座標(", j, i, ")", place)
+                        # 修正重疊的值
+                        #
+                        fix = expect_locate(place, i+1)
+                        total_cluster[place].pop()
+                        total_cluster.append(fix)
+                        temp_locate[place] = fix
+
+
 
                     except ValueError:
-                        #if check_count >= len(total_pos[i]):
+                        check_list.append(place)
+                        check_count = check_count+1
+                        temp_locate[place] = j
+                        total_cluster[place].append(value)
+                        break
 
-                        if color_dist_list[place] < 125:
-                            check_list.append(place)
-                            check_count = check_count+1
-                            #pre_color[place] = opening[j, i]
-                            #pre_color[place] = lab_img[j, i]
-                            temp_locate[place] = j
-                            total_cluster[place].append(value)
-                            break
-                        else:
-                            pass
-                            #print("未歸類的值，於座標(", j, i, ")", place)
         for k in range(0, cluster_num):
             pre_locate[k] = temp_locate[k]
         for l in range(0, cluster_num):
