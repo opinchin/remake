@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 def dataregion_detect(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     ret, gray = cv2.threshold(gray, 230, 255, cv2.THRESH_BINARY)
-    cv2.imshow("gray",gray)
+    # cv2.imshow("gray",gray)
 
     [a, b] = np.shape(gray)
 
@@ -75,10 +75,16 @@ def dataregion_detect(image):
     else:
         print("找不到上邊界")
     cv2.imshow("DataRegion", image_data)
+    cv2.imwrite("DataRegion.jpg", image_data)
     cv2.waitKey()
-    return up_bound, down_bound, left_bound, right_bound
+    return image_data, up_bound, down_bound, left_bound, right_bound
 
 
 img = cv2.imread("testpaper4.jpg")
-list_ = dataregion_detect(img)
+
+list_, _,_,_,_ = dataregion_detect(img)
+gray = cv2.cvtColor(list_,cv2.COLOR_BGR2GRAY)
+_, thr = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
+cv2.imshow("a",thr)
+cv2.waitKey()
 

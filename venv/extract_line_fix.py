@@ -202,7 +202,7 @@ def dataregion_detect(image):
     return up_bound, down_bound, left_bound, right_bound
 
 
-img = cv2.imread("Grid_removed.jpg")
+img = cv2.imread("black_grid.jpg")
 [a, b, c] = np.shape(img)  # a=484 b=996,c=3
 kernel = np.ones((5, 5), np.uint8)
 # blur = cv2.medianBlur(img, 3)
@@ -214,8 +214,8 @@ lab_img = cv2.cvtColor(opening, cv2.COLOR_BGR2LAB)
 hsv_img = cv2.cvtColor(opening, cv2.COLOR_BGR2HSV)
 gray = cv2.cvtColor(opening, cv2.COLOR_BGR2GRAY)
 ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
-# cv2.imshow("f", thresh)
-# cv2.waitKey()
+cv2.imshow("f", thresh)
+cv2.waitKey()
 # 各行的紀錄點位置
 total_pos = []
 for i in range(0, b):
