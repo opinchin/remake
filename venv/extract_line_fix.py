@@ -391,11 +391,11 @@ def expect_locate(in_which_cluster, in_which_col):
                     end = j
                     end_place = i
                     ones = True
-                    print(end, in_which_col - 1, "to", end_place, in_which_cluster)
+                    # print(end, in_which_col - 1, "to", end_place, in_which_cluster)
                     # count = i - (in_which_col - 1)
                     break
     if count > 10:
-        print(in_which_col)
+        # print(in_which_col)
         return None
     for i in range(0, count):
         dist = []
@@ -403,10 +403,10 @@ def expect_locate(in_which_cluster, in_which_col):
         place = dist.index(min(dist))  # 1
         end = total_pos[end_place][place]
         end_place = end_place - 1
-    print(end)
+    # print(end)
     return end
 
-
+check_cross = False
 for i in range(locate + 1, len(total_pos)):
     value = x_label_to_value(i)
     x_value.append(value)
@@ -416,15 +416,197 @@ for i in range(locate + 1, len(total_pos)):
     else:
         check_list = []
         check_count = 0
+
+        check_close_list = []
+        check_close = False
+        # check_if_close
+        for j in range(0, cluster_num):
+            check_close_list[:] = [abs(x-pre_locate[j]) for x in pre_locate]
+            check_close_num = 0
+            for k in check_close_list:
+                if k < 20:
+                    check_close_num = check_close_num+1
+                    if k == 0 :
+                        pass
+                    else:
+                        close_place = check_close_list.index(k)
+            if check_close_num == 2:
+                check_close = True
+                close_place_1 = j # 0
+                # print("Close in ",i , close_place_1, close_place)
+                break
+
+        # check cross
+        check_cross_num = 0
+        if len(total_pos[i]) < cluster_num and check_close:
+            check_cross = False
+            x = pre_locate[close_place_1]  # 0
+            y = pre_locate[close_place]  # 1
+            if x > y:
+                for l in total_pos[i]:
+                    if l in range(y, x):
+                        check_cross_num = check_cross_num + 1
+                        check_slope = l
+            else:
+                for l in total_pos[i]:
+                    if l in range(x, y):
+                        check_cross_num = check_cross_num + 1
+                        check_slope = l
+        if check_cross_num == 1:
+            check_cross = True
+            cross_slope_1 = check_slope - pre_locate[close_place_1]   # 0
+            cross_slope = check_slope - pre_locate[close_place]  # 1
+
+            if cross_slope > 0:
+                cross_slope = 1
+                cross_slope_1 = -1
+            else:
+                cross_slope = -1
+                cross_slope_1 = 1
+            # print("Cross in ", i)
+
         for j in total_pos[i]:
+            if len(total_pos[i]) == cluster_num:
+
+                #  特殊案例 確認交叉後 第一次歸類
+                if check_cross:
+                    # pre_locate[close_place]  # 179
+                    # cross_slope  # -
+                    # pre_locate[close_place_1]  # 160
+                    # cross_slope_1 # +
+                    temp = []
+                    check_place = []
+                    temp[:] = [j - pre_locate[close_place] for j in total_pos[i]]
+                    if cross_slope < 0:  # 遞減
+                        expect = float("-inf")
+                        double_check = []
+                        # 找斜率為負 統計有可能的值
+                        for j in temp:
+                            if j < 0:
+                                if expect < j:
+                                    expect = j
+                                    double_check.append(j)
+                        if len(double_check) == 1:  # =1表示為只有一個可能
+                            check_cross_place = temp.index(double_check[0])
+                            check_cross_place_1 = check_cross_place + 1
+                            value = place_to_value(total_pos[i][check_cross_place])
+                            value1 = place_to_value(total_pos[i][check_cross_place_1])
+                            check_list.append(check_cross_place)
+                            check_list.append(check_cross_place_1)
+                            temp_locate[close_place] = total_pos[i][check_cross_place]
+                            temp_locate[close_place_1] = total_pos[i][check_cross_place_1]
+                            total_cluster[close_place].append(value)
+                            total_cluster[close_place_1].append(value1)
+                        else:  # 複數可能則需判斷何者正確
+                            find_min = []
+                            for j in double_check:
+                                check_cross_place = temp.index(j)
+                                check_cross_place_1 = check_cross_place + 1
+                                # 另一必須為遞增
+                                dist = total_pos[i][check_cross_place_1] - pre_locate[close_place_1]
+                                find_min.append(dist)
+                                if dist < 0:
+                                    pass
+                                else:
+                                    if abs(dist) < 40:
+                                        value = place_to_value(total_pos[i][check_cross_place])
+                                        value1 = place_to_value(total_pos[i][check_cross_place_1])
+                                        check_list.append(check_cross_place)
+                                        check_list.append(check_cross_place_1)
+                                        temp_locate[close_place] = total_pos[i][check_cross_place]
+                                        temp_locate[close_place_1] = total_pos[i][check_cross_place_1]
+                                        total_cluster[close_place].append(value)
+                                        total_cluster[close_place_1].append(value1)
+                        for j in total_pos[i]:
+                            dist_list = []
+                            value = place_to_value(j)
+                            for k in range(0, cluster_num):
+                                dist = abs(pre_locate[k] - j)
+                                dist_list.append(dist)
+                            for a, element in enumerate(dist_list):
+                                if dist_list.index(min(dist_list)) == a:
+                                    place = a
+                                    try:
+                                        try_y = check_list.index(place)
+                                    except ValueError:
+                                        check_list.append(place)
+                                        check_count = check_count + 1
+                                        temp_locate[place] = j
+                                        total_cluster[place].append(value)
+                    else:  # 遞增
+                        print("ttt")
+                        expect = float("inf")
+                        double_check = []
+                        # 找斜率為正 統計有可能的值
+                        for j in temp:
+                            if j > 0:
+                                double_check.append(j)
+                                if expect > j:
+                                    expect = j
+                        if len(double_check) == 1:  # =1表示為只有一個可能
+                            check_cross_place = temp.index(double_check[0])
+                            check_cross_place_1 = check_cross_place - 1
+                            value = place_to_value(total_pos[i][check_cross_place])
+                            value1 = place_to_value(total_pos[i][check_cross_place_1])
+                            check_list.append(check_cross_place)
+                            check_list.append(check_cross_place_1)
+                            temp_locate[close_place] = total_pos[i][check_cross_place]
+                            temp_locate[close_place_1] = total_pos[i][check_cross_place_1]
+                            total_cluster[close_place].append(value)
+                            total_cluster[close_place_1].append(value1)
+                        else:  # 複數可能則需判斷何者正確
+                            for j in double_check:
+                                check_cross_place = temp.index(j)
+                                check_cross_place_1 = check_cross_place - 1
+                                # 另一必須為遞減
+                                dist = total_pos[i][check_cross_place_1] - pre_locate[close_place_1]
+                                if dist > 0:
+                                    pass
+                                else:
+                                    if abs(dist) < 40:
+                                        value = place_to_value(total_pos[i][check_cross_place])
+                                        value1 = place_to_value(total_pos[i][check_cross_place_1])
+                                        check_list.append(check_cross_place)
+                                        check_list.append(check_cross_place_1)
+                                        temp_locate[close_place] = total_pos[i][check_cross_place]
+                                        temp_locate[close_place_1] = total_pos[i][check_cross_place_1]
+                                        total_cluster[close_place].append(value)
+                                        total_cluster[close_place_1].append(value1)
+
+                        for j in total_pos[i]:
+                            dist_list = []
+                            value = place_to_value(j)
+                            for k in range(0, cluster_num):
+                                dist = abs(pre_locate[k] - j)
+                                dist_list.append(dist)
+                            for a, element in enumerate(dist_list):
+                                if dist_list.index(min(dist_list)) == a:
+                                    place = a
+                                    try:
+                                        try_y = check_list.index(place)
+                                    except ValueError:
+                                        check_list.append(place)
+                                        check_count = check_count + 1
+                                        temp_locate[place] = j
+                                        total_cluster[place].append(value)
+                    print("fff", i)
+                    check_cross = False
+                    break
+
+                pass
+            else:
+                break
             dist_list = []
-            color_dist_list = []
             value = place_to_value(j)
             for k in range(0, cluster_num):
                 dist = abs(pre_locate[k] - j)
                 dist_list.append(dist)
             for a, element in enumerate(dist_list):
-                if element < 20:
+                if dist_list.index(min(dist_list)) == a:
+                    # if min(dist_list) > 20:
+                    #     print(pre_locate)
+                    #     print("dist>20",i, j)
+                    #     break
                     place = a
                     try:
                         try_y = check_list.index(place)
