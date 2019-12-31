@@ -202,6 +202,7 @@ def dataregion_detect(image):
     return up_bound, down_bound, left_bound, right_bound
 
 
+img = cv2.imread("tri_black_gridout.jpg")
 img = cv2.imread("black_grid.jpg")
 [a, b, c] = np.shape(img)  # a=484 b=996,c=3
 kernel = np.ones((5, 5), np.uint8)
@@ -271,15 +272,15 @@ for i in range(0, cluster_num):
     temp_locate.append([""])
     pre_color.append([])
 
-thr_value = 100
-thr1_value = 80
-thr_place = 71
-thr1_place = 143
+thr_value = 80
+thr1_value = 60
+thr_place = 194
+thr1_place = 292
 
 x_label_value_1 = 1
-x_label_place_1 = 54
+x_label_place_1 = 69
 x_label_value_2 = 2
-x_label_place_2 = 160
+x_label_place_2 = 206
 
 clustered = False
 cluster_count = 1
@@ -407,33 +408,38 @@ def expect_locate(in_which_cluster, in_which_col):
     return end
 
 check_cross = False
+count_none = 0
 for i in range(locate + 1, len(total_pos)):
     value = x_label_to_value(i)
     x_value.append(value)
+    # if 太多None再後半段 則視為數據中止
+    if total_pos[i] == [None] and i > 4/5*len(total_pos):
+        count_none = count_none+1
     if total_pos[i] == [None]:
         for n in range(0, cluster_num):
             total_cluster[n].append("")
     else:
+
         check_list = []
         check_count = 0
 
+        # check_if_close
         check_close_list = []
         check_close = False
-        # check_if_close
         for j in range(0, cluster_num):
             check_close_list[:] = [abs(x-pre_locate[j]) for x in pre_locate]
             check_close_num = 0
             for k in check_close_list:
                 if k < 20:
                     check_close_num = check_close_num+1
-                    if k == 0 :
+                    if k == 0:
                         pass
                     else:
                         close_place = check_close_list.index(k)
             if check_close_num == 2:
                 check_close = True
-                close_place_1 = j # 0
-                # print("Close in ",i , close_place_1, close_place)
+                close_place_1 = j  # 0
+                # print("Close in ", i, close_place_1, close_place)
                 break
 
         # check cross
@@ -463,13 +469,14 @@ for i in range(locate + 1, len(total_pos)):
             else:
                 cross_slope = -1
                 cross_slope_1 = 1
-            # print("Cross in ", i)
+            print("Cross in ", i, close_place, close_place_1)
 
         for j in total_pos[i]:
-            if len(total_pos[i]) == cluster_num:
-
+            if count_none > 10:
+                break
+            if len(total_pos[i]) <= cluster_num:
                 #  特殊案例 確認交叉後 第一次歸類
-                if check_cross:
+                if check_cross and len(total_pos[i]) == cluster_num:
                     # pre_locate[close_place]  # 179
                     # cross_slope  # -
                     # pre_locate[close_place_1]  # 160
@@ -502,6 +509,8 @@ for i in range(locate + 1, len(total_pos)):
                             for j in double_check:
                                 check_cross_place = temp.index(j)
                                 check_cross_place_1 = check_cross_place + 1
+                                if check_cross_place_1 >= len(pre_locate):
+                                    break
                                 # 另一必須為遞增
                                 dist = total_pos[i][check_cross_place_1] - pre_locate[close_place_1]
                                 find_min.append(dist)
@@ -534,7 +543,6 @@ for i in range(locate + 1, len(total_pos)):
                                         temp_locate[place] = j
                                         total_cluster[place].append(value)
                     else:  # 遞增
-                        print("ttt")
                         expect = float("inf")
                         double_check = []
                         # 找斜率為正 統計有可能的值
@@ -596,6 +604,7 @@ for i in range(locate + 1, len(total_pos)):
                 pass
             else:
                 break
+            # if not cross need to expect cross place
             dist_list = []
             value = place_to_value(j)
             for k in range(0, cluster_num):
@@ -618,6 +627,9 @@ for i in range(locate + 1, len(total_pos)):
                             total_cluster.append(fix)
                             temp_locate[place] = fix
                     except ValueError:
+                        if check_cross:
+                            if place == close_place or place == close_place_1:
+                                break
                         check_list.append(place)
                         check_count = check_count + 1
                         temp_locate[place] = j
