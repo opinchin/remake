@@ -504,8 +504,9 @@ for i in range(locate+1, len(total_pos)):
                         # 修正重疊的值
                         #
                         fix = expect_locate(place, i+1)
+                        value = place_to_value(fix)
                         total_cluster[place].pop()
-                        total_cluster.append(fix)
+                        total_cluster[place].append(value)
                         temp_locate[place] = fix
 
 
