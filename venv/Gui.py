@@ -981,12 +981,15 @@ def data_extract_fun():
     pre_color = []
     temp_locate = []
     x_value = []
+    total_cluster_pos = []
+    pre_locate_col = []
     for i in range(0, cluster_num):
-        # x_value.append([])
         total_cluster.append([])
         pre_locate.append([""])
         temp_locate.append([""])
         pre_color.append([])
+        total_cluster_pos.append([])
+        pre_locate_col.append([""])
     clustered = False
     cluster_count = 1
 
@@ -1079,14 +1082,17 @@ def data_extract_fun():
         # 空集合不分群
         if cluster_count == cluster_num + 1:
             break
-        try:
-            value = x_label_to_value(i)
-            x_value.append(value)
-        except:
-            pass
+        value = x_label_to_value(i)
+        x_value.append(value)
+        # try:
+        #     value = x_label_to_value(i)
+        #     x_value.append(value)
+        # except:
+        #     pass
         if total_pos[i] == [None]:
             for n in range(0, cluster_num):
                 total_cluster[n].append("")
+                total_cluster_pos[n].append("")
         # 第一次進入分群閥值定義
         else:
             if len(total_pos[i]) == cluster_num:  # 假如該行紀錄點數量剛好等於總分群數
@@ -1095,7 +1101,9 @@ def data_extract_fun():
                     if not clustered:  # 未歸類初始化，則直接定義參考值。
                         pre_color[cluster_count - 1] = opening[j, i]
                         pre_locate[cluster_count - 1] = j
+                        pre_locate_col[cluster_count - 1] = i
                         total_cluster[cluster_count - 1].append(value)
+                        total_cluster_pos[cluster_count - 1].append(j)
                         print("已定義類別", cluster_count, "初始位置於", i, "行的", pre_locate[cluster_count - 1], "座標")
                         cluster_count = cluster_count + 1
                         locate = i
@@ -1104,137 +1112,318 @@ def data_extract_fun():
             elif len(total_pos[i]) < cluster_num:  # 假如該行紀錄點數量小於總分群數
                 for n in range(0, cluster_num):
                     total_cluster[n].append("")
+                    total_cluster_pos[n].append("")
                     continue
                 for j in total_pos[i]:
+                    value = place_to_value(j)
                     if not clustered:
                         pass
                     else:
                         pass
             else:  # 假如該行紀錄點大於總分群數
+                for n in range(0, cluster_num):
+                    total_cluster[n].append("")
+                    total_cluster_pos[n].append("")
                 for j in total_pos[i]:
+                    value = place_to_value(j)
                     if not clustered:
                         pass
                     else:
                         pass
-    times = 0
+    check_cross = False
+    count_none = 0
+    cross_num = 0
+    # 根據Total_pos開始分類
     for i in range(locate + 1, len(total_pos)):
-        try:
-            value = x_label_to_value(i)
-            x_value.append(value)
-        except:
-            pass
+        value = x_label_to_value(i)
+        x_value.append(value)
+        # try:
+        #     value = x_label_to_value(i)
+        #     x_value.append(value)
+        # except:
+        #     pass
+
+        # if 太多None再後半段 則視為數據中止
+        if total_pos[i] == [None] and i > 4 / 5 * len(total_pos):
+            count_none = count_none + 1
         if total_pos[i] == [None]:
             for n in range(0, cluster_num):
                 total_cluster[n].append("")
+                total_cluster_pos[n].append("")
         else:
             check_list = []
             check_count = 0
+
+            # check_if_close
+            check_close_list = []
+            check_close = False
+            for j in range(0, cluster_num):
+                check_close_list[:] = [abs(x - pre_locate[j]) for x in pre_locate]
+                check_close_num = 0
+                for k in check_close_list:
+                    if k < row / 15:
+                        check_close_num = check_close_num + 1
+                        if k == 0:
+                            pass
+                        else:
+                            close_place = check_close_list.index(k)
+                if check_close_num == 2:
+                    check_close = True
+                    close_place_1 = j
+                    break
+
+            # check cross
+            check_cross_num = 0
+            if cross_num != 0 and len(total_pos[i]) >= cluster_num:
+                cross_num = 0
+
+            if len(total_pos[i]) < cluster_num and check_close:
+                if check_cross:
+                    pass
+                else:
+                    if cross_num == 0:
+                        pre_1 = pre_locate[close_place_1]  # 376
+                        pre = pre_locate[close_place]  # 363
+
+                    # double check if error  or not
+                    double_check = []
+                    double_check_count = 0
+                    for j in total_pos[i]:
+                        dist_list = []
+                        for k in range(0, cluster_num):
+                            dist = abs(pre_locate[k] - j)
+                            dist_list.append(dist)
+                        if min(dist_list) > 20:
+                            pass
+                        else:
+                            place = dist_list.index(min(dist_list))
+                            double_check.append(place)
+                    if close_place in double_check:
+                        double_check_count = double_check_count + 1
+                    if close_place_1 in double_check:
+                        double_check_count = double_check_count + 1
+                    if double_check_count == 2:
+                        cross_num = 0
+                    else:
+                        if pre_1 > pre:
+                            for l in total_pos[i]:
+                                if l in range(pre, pre_1):
+                                    check_cross_num = check_cross_num + 1
+                        else:
+                            for l in total_pos[i]:
+                                if l in range(pre_1, pre):
+                                    check_cross_num = check_cross_num + 1
+            if check_cross_num == 1:
+                cross_num = cross_num + 1
+            if cross_num >= 2:
+                if pre > pre_1:
+                    cross_slope = -1
+                    cross_slope_1 = 1
+                else:
+                    cross_slope = 1
+                    cross_slope_1 = -1
+                if abs(pre_locate_col[close_place_1] - pre_locate_col[close_place]) > col * 0.1:
+                    pass
+                else:
+                    check_cross = True
+                    cross_num = 0
+                    print("Cross in ", i, close_place, close_place_1)
+
+            # 考量前者Cross狀況進行分類
             for j in total_pos[i]:
+                if count_none > 10:
+                    break
+                if len(total_pos[i]) <= cluster_num:
+                    #  特殊案例 確認交叉後 第一次歸類
+                    if check_cross and len(total_pos[i]) == cluster_num:
+                        temp = []
+                        tempp = []
+                        temp[:] = [j - pre_locate[close_place] for j in total_pos[i]]
+                        tempp[:] = [abs(j - pre_locate[close_place]) for j in total_pos[i]]  # 212 65 51
+                        abs_temp = tempp.copy()
+                        place = tempp.index(min(tempp))
+                        pos = total_pos[i][place]
+                        tempp.pop(place)
+                        place1 = abs_temp.index(min(tempp))
+                        pos1 = total_pos[i][place1]
+                        # Error correct 如果 temp = [-3, 3, 211]，abs後則會有兩相同的值之誤判
+                        if abs(pos - pos1) > row * 0.15:
+                            break
+                        if place == place1:
+                            place1 = temp.index(min(tempp))
+                            pos1 = total_pos[i][place1]
+                        if pos > pos1:
+                            pos_slope = 1
+                        else:
+                            pos_slope = -1
+                        value = place_to_value(pos)
+                        value1 = place_to_value(pos1)
+                        check_list.append(close_place)
+                        check_list.append(close_place_1)
+                        if cross_slope < 0:  # 遞減
+                            if pos_slope < 0:
+                                temp_locate[close_place] = total_pos[i][place]
+                                temp_locate[close_place_1] = total_pos[i][place1]
+                                pre_locate_col[close_place] = i
+                                pre_locate_col[close_place_1] = i
+                                total_cluster[close_place].append(value)
+                                total_cluster[close_place_1].append(value1)
+                                total_cluster_pos[close_place].append(total_pos[i][place])
+                                total_cluster_pos[close_place_1].append(total_pos[i][place1])
+                            else:
+                                temp_locate[close_place] = total_pos[i][place1]
+                                temp_locate[close_place_1] = total_pos[i][place]
+                                pre_locate_col[close_place] = i
+                                pre_locate_col[close_place_1] = i
+                                total_cluster[close_place].append(value1)
+                                total_cluster[close_place_1].append(value)
+                                total_cluster_pos[close_place].append(total_pos[i][place1])
+                                total_cluster_pos[close_place_1].append(total_pos[i][place])
+                        else:
+                            if pos_slope > 0:
+                                temp_locate[close_place] = total_pos[i][place]
+                                temp_locate[close_place_1] = total_pos[i][place1]
+                                pre_locate_col[close_place] = i
+                                pre_locate_col[close_place_1] = i
+                                total_cluster[close_place].append(value)
+                                total_cluster[close_place_1].append(value1)
+                                total_cluster_pos[close_place].append(total_pos[i][place])
+                                total_cluster_pos[close_place_1].append(total_pos[i][place1])
+                            else:
+                                temp_locate[close_place] = total_pos[i][place1]
+                                temp_locate[close_place_1] = total_pos[i][place]
+                                pre_locate_col[close_place] = i
+                                pre_locate_col[close_place_1] = i
+                                total_cluster[close_place].append(value1)
+                                total_cluster[close_place_1].append(value)
+                                total_cluster_pos[close_place].append(total_pos[i][place1])
+                                total_cluster_pos[close_place_1].append(total_pos[i][place])
+                        for j in total_pos[i]:
+                            dist_list = []
+                            value = place_to_value(j)
+                            for k in range(0, cluster_num):
+                                dist = abs(pre_locate[k] - j)
+                                dist_list.append(dist)
+                            for a, element in enumerate(dist_list):
+                                if dist_list.index(min(dist_list)) == a:
+                                    place = a
+                                    try:
+                                        try_y = check_list.index(place)
+                                    except ValueError:
+                                        check_list.append(place)
+                                        check_count = check_count + 1
+                                        temp_locate[place] = j
+                                        pre_locate_col[place] = i
+                                        total_cluster[place].append(value)
+                                        total_cluster_pos[place].append(j)
+                        print("fff", i)
+                        check_cross = False
+                        break
                 dist_list = []
-                color_dist_list = []
                 value = place_to_value(j)
                 for k in range(0, cluster_num):
                     dist = abs(pre_locate[k] - j)
-                    color_dist = colordist(pre_color[k], opening[j, i])
                     dist_list.append(dist)
-                    color_dist_list.append(color_dist)
-                # for a, element in enumerate(dist_list):
-                #     if element < 20:
-                #         place = a
-                #         try:
-                #             if check_list.index(place):
-                #                 pass
-                #                 # print("有重疊的值，於座標(", j, i, ")")
-                #         except ValueError:
-                #             if color_dist_list[place] < 150:
-                #                 check_list.append(place)
-                #                 check_count = check_count + 1
-                #                 # temp_locate[place] = j
-                #                 pre_locate[place] = j
-                #                 total_cluster[place].append(value)
-                #                 break
-                #             else:
-                #                 pass
-                                # print("未歸類的值，於座標(", j, i, ")", place)
-                # place = color_dist_list.index(min(color_dist_list))
-                # if min(color_dist_list) < 125 and dist_list[place] < 20:
-                #     check_list.append(place)
-                #     temp_locate[place] = j
-                #     total_cluster[place].append(value)
-                #     break
-                # else:
-                #     for a, element in enumerate(color_dist_list):
-                #         if element < 125 and dist_list[a] < 20:
-                #             place = a
-                #         try:
-                #             try_y = check_list.index(place)
-                #             fix = expect_locate(place, i + 1)
-                #             total_cluster[place].pop()
-                #             total_cluster.append(fix)
-                #             temp_locate[place] = fix
-                #         except ValueError:
-                #             check_list.append(place)
-                #             check_count = check_count + 1
-                #             temp_locate[place] = j
-                #             total_cluster[place].append(value)
-                #             break
-                if len(total_pos[i]) == cluster_num:
-                    place = color_dist_list.index(min(color_dist_list))
-                    if min(color_dist_list) < 125 and dist_list[place] < 25:
-                        check_list.append(place)
-                        temp_locate[place] = j
-                        total_cluster[place].append(value)
-                        continue
-                for a, element in enumerate(color_dist_list):
-                    if element < 125 and dist_list[a] < 25:
+                for a, element in enumerate(dist_list):
+                    if dist_list.index(min(dist_list)) == a:
+                        if min(dist_list) > row / 30:
+                            break
                         place = a
                         try:
                             try_y = check_list.index(place)
-                            times = times+1
-
-                            # fix = expect_locate(place, i + 1)
-                            # print(times, i, fix)
-                            try:
-                                if abs(fix - pre_locate[a]) < 20:
-                                    value = place_to_value(fix)
-                                    total_cluster[place].pop()
-                                    total_cluster[place].append(value)
-                                    temp_locate[place] = fix
-                            except:
+                            fix = None
+                            if fix == None:
                                 pass
-
+                            else:
+                                value = place_to_value(fix)
+                                total_cluster[place].pop()
+                                total_cluster[place].append(value)
+                                total_cluster_pos[place].pop()
+                                total_cluster_pos[place].append(fix)
+                                temp_locate[place] = fix
+                                pre_locate_col[place] = i
                         except ValueError:
-
+                            if check_cross:
+                                if place == close_place or place == close_place_1:
+                                    break
                             check_list.append(place)
                             check_count = check_count + 1
                             temp_locate[place] = j
+                            pre_locate_col[place] = i
                             total_cluster[place].append(value)
+                            total_cluster_pos[place].append(j)
                             break
-
-
+            for k in range(0, cluster_num):
+                if temp_locate[k] == [""]:
+                    temp_locate[k] = pre_locate[k]
+                pre_locate[k] = temp_locate[k]
             for l in range(0, cluster_num):
-                if temp_locate[l] == ['']:
-                    pass
-                else:
-                    pre_locate[l] = temp_locate[l]
                 try:
                     check_list.index(l)
                 except ValueError:
                     total_cluster[l].append("")
-
+                    total_cluster_pos[l].append("")
+            # 整合前程式
+            # for j in total_pos[i]:
+            #     dist_list = []
+            #     color_dist_list = []
+            #     value = place_to_value(j)
+            #     for k in range(0, cluster_num):
+            #         dist = abs(pre_locate[k] - j)
+            #         color_dist = colordist(pre_color[k], opening[j, i])
+            #         dist_list.append(dist)
+            #         color_dist_list.append(color_dist)
+            #
+            #     if len(total_pos[i]) == cluster_num:
+            #         place = color_dist_list.index(min(color_dist_list))
+            #         if min(color_dist_list) < 125 and dist_list[place] < 25:
+            #             check_list.append(place)
+            #             temp_locate[place] = j
+            #             total_cluster[place].append(value)
+            #             continue
+            #     for a, element in enumerate(color_dist_list):
+            #         if element < 125 and dist_list[a] < 25:
+            #             place = a
+            #             try:
+            #                 try_y = check_list.index(place)
+            #                 try:
+            #                     if abs(fix - pre_locate[a]) < 20:
+            #                         value = place_to_value(fix)
+            #                         total_cluster[place].pop()
+            #                         total_cluster[place].append(value)
+            #                         temp_locate[place] = fix
+            #                 except:
+            #                     pass
+            #
+            #             except ValueError:
+            #
+            #                 check_list.append(place)
+            #                 check_count = check_count + 1
+            #                 temp_locate[place] = j
+            #                 total_cluster[place].append(value)
+            #                 break
+            #
+            #
+            # for l in range(0, cluster_num):
+            #     if temp_locate[l] == ['']:
+            #         pass
+            #     else:
+            #         pre_locate[l] = temp_locate[l]
+            #     try:
+            #         check_list.index(l)
+            #     except ValueError:
+            #         total_cluster[l].append("")
+    # 存檔
     sheet2 = book.add_sheet('after extracting')
-    try:
-        for i, e in enumerate(x_value):
-            sheet2.write(i, 0, e)
-    except:
-        print(x_value)
-        pass
+    for i, e in enumerate(x_value):
+        sheet2.write(i, 0, e)
+
     for i in range(0, cluster_num):
-        Gui_define.correct_data(total_cluster[i])
+        correct_data(total_cluster[i])
     for k in range(0, cluster_num):
         col = k + 1
         for i, e in enumerate(total_cluster[k]):
-            if type(e) == float:
+            if type(e) != str:
                 sheet2.write(i, col, e)
             else:
                 sheet2.write(i, col, str(total_cluster[k][i]))
@@ -1245,6 +1434,44 @@ def data_extract_fun():
     except PermissionError:
         print("請關閉Excel後存檔")
         pass
+
+    sheet3 = book.add_sheet('sheet3')
+    for k in range(0, cluster_num):
+        col = k
+        for i, e in enumerate(total_cluster_pos[k]):
+            if type(e) != str:
+                sheet3.write(i, col, e)
+            else:
+                sheet3.write(i, col, str(total_cluster_pos[k][i]))
+    name = "new_data.xls"
+    try:
+        book.save(name)
+        book.save(TemporaryFile())
+    except PermissionError:
+        print("請關閉Excel後存檔")
+        pass
+    # try:
+    #     for i, e in enumerate(x_value):
+    #         sheet2.write(i, 0, e)
+    # except:
+    #     print(x_value)
+    #     pass
+    # for i in range(0, cluster_num):
+    #     Gui_define.correct_data(total_cluster[i])
+    # for k in range(0, cluster_num):
+    #     col = k + 1
+    #     for i, e in enumerate(total_cluster[k]):
+    #         if type(e) == float:
+    #             sheet2.write(i, col, e)
+    #         else:
+    #             sheet2.write(i, col, str(total_cluster[k][i]))
+    # name = "new_data.xls"
+    # try:
+    #     book.save(name)
+    #     book.save(TemporaryFile())
+    # except PermissionError:
+    #     print("請關閉Excel後存檔")
+    #     pass
     print("Finish Extracting")
 
 

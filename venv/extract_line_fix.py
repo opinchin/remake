@@ -211,14 +211,14 @@ img = cv2.imread("C:/Users/Burny/PycharmProjects/remake/venv/output/Grid_removed
 # img = cv2.imread("Grid_removed1.jpg")
 # img = cv2.imread("Grid_removed2.jpg")
 
-thr_value = 3
-thr1_value = 2.5
-thr_place = 128
-thr1_place = 257
-x_label_value_1 = 5
-x_label_value_2 = 10
-x_label_place_1 = 544
-x_label_place_2 = 1085
+thr_value = 0.7
+thr1_value = 0.6
+thr_place = 162
+thr1_place = 244
+x_label_value_1 = 20
+x_label_value_2 = 25
+x_label_place_1 = 271
+x_label_place_2 = 406
 
 [a, b, c] = np.shape(img)  # a=484 b=996,c=3
 row = a
@@ -445,10 +445,8 @@ for i in range(locate + 1, len(total_pos)):
             total_cluster[n].append("")
             total_cluster_pos[n].append("")
     else:
-
         check_list = []
         check_count = 0
-
         # check_if_close
         check_close_list = []
         check_close = False
