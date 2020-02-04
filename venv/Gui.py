@@ -35,6 +35,7 @@ def openfile():
         test = False
         open_close_text.set("Close Image")
         row, col, _ = np.shape(origin)
+        print("Row=", row, "Col=", col)
         # 初始化
 #        hsv_count.config(state="disabled")
         checklabel.config(bg='red')
@@ -565,7 +566,7 @@ def label_define_fun():
                         thr1_place = check_place[check.index(j)]
                         find_or_not = True
                         break
-                print(check)
+                # print(check)
         y_label_place_1 = thr_place
         y_label_value_1 = thr_value
         y_label_place_2 = thr1_place
@@ -671,7 +672,7 @@ def label_define_fun():
                         thr1_place = check_place[check.index(j)]
                         find_or_not = True
                         break
-                print(check)
+                # print(check)
         x_label_place_1 = thr_place
         x_label_value_1 = thr_value
         x_label_place_2 = thr1_place

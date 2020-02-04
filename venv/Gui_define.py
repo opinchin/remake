@@ -116,6 +116,11 @@ def find_total_bound(list):
         if k1 == len(list)-1:
             break
         [k1, k2] = find_bound(list, k1)
+        try:
+            if abs(k1 - k2) > len(list)/2:
+                break
+        except:
+            pass
         if k1 == k2 and k1 == len(list)-1:
             k1_list.append(k1-1)
             k2_list.append(k2)

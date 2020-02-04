@@ -202,17 +202,40 @@ def dataregion_detect(image):
     return up_bound, down_bound, left_bound, right_bound
 
 
-img = cv2.imread("tri_black_gridout.jpg")
-# img = cv2.imread("black_grid.jpg")
+
+# img = cv2.imread("tri_black_gridout.jpg")
+img = cv2.imread("black_grid.jpg")
+img = cv2.imread("C:/Users/Burny/PycharmProjects/remake/venv/output/Grid_removed.jpg")
+# img = cv2.imread("blurop.jpg")
+# img = cv2.imread("Grid_ removed_f.jpg")
+# img = cv2.imread("Grid_removed1.jpg")
+# img = cv2.imread("Grid_removed2.jpg")
+
+thr_value = 3
+thr1_value = 2.5
+thr_place = 128
+thr1_place = 257
+x_label_value_1 = 5
+x_label_value_2 = 10
+x_label_place_1 = 544
+x_label_place_2 = 1085
+
 [a, b, c] = np.shape(img)  # a=484 b=996,c=3
-kernel = np.ones((5, 5), np.uint8)
+row = a
+col = b
+print("row=", row, "col=", col)
+
+kernel = np.ones((7, 7), np.uint8)
+cross_kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
 blur = cv2.blur(img, (3, 3))
 opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)  # BGR
-opening = cv2.dilate(opening, (5, 5))
+opening = cv2.dilate(opening, (3, 3))
 lab_img = cv2.cvtColor(opening, cv2.COLOR_BGR2LAB)
 hsv_img = cv2.cvtColor(opening, cv2.COLOR_BGR2HSV)
 gray = cv2.cvtColor(opening, cv2.COLOR_BGR2GRAY)
 ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
+# cv2.imshow("tt", thresh)
+# cv2.waitKey()
 cv2.imwrite("t.jpg", thresh)
 # 各行的紀錄點位置
 total_pos = []
@@ -222,6 +245,7 @@ for i in range(0, b):
         pos.append(thresh[j, i])
     add_none = []  # 欲添加於Total_pos 之 List
     [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
+
     temp = [round((k1[i] + k2[i] - 1) / 2) for i in range(len(k1))]
     total_pos.append(temp)
 
@@ -263,6 +287,7 @@ print("分成", cluster_num, "類")
 total_cluster = []
 total_cluster_pos = []
 pre_locate = []
+pre_locate_col = []
 temp_locate = []
 pre_color = []
 x_value = []
@@ -271,18 +296,10 @@ for i in range(0, cluster_num):
     total_cluster.append([])
     total_cluster_pos.append([])
     pre_locate.append([""])
+    pre_locate_col.append([""])
     temp_locate.append([""])
     pre_color.append([])
 
-thr_value = 80
-thr1_value = 60
-thr_place = 194
-thr1_place = 292
-
-x_label_value_1 = 1
-x_label_place_1 = 69
-x_label_value_2 = 2
-x_label_place_2 = 206
 
 clustered = False
 cluster_count = 1
@@ -353,6 +370,7 @@ for i in range(len(total_pos)):
                 if not clustered:  # 未歸類初始化，則直接定義參考值。
                     pre_color[cluster_count - 1] = opening[j, i]
                     pre_locate[cluster_count - 1] = j
+                    pre_locate_col[cluster_count - 1] = i
                     total_cluster[cluster_count - 1].append(value)
                     total_cluster_pos[cluster_count - 1].append(j)
                     print("已定義類別", cluster_count, "初始位置於", i, "行的", pre_locate[cluster_count - 1], "座標")
@@ -438,7 +456,7 @@ for i in range(locate + 1, len(total_pos)):
             check_close_list[:] = [abs(x-pre_locate[j]) for x in pre_locate]
             check_close_num = 0
             for k in check_close_list:
-                if k < 25:
+                if k < row/15:
                     check_close_num = check_close_num+1
                     if k == 0:
                         pass
@@ -452,6 +470,9 @@ for i in range(locate + 1, len(total_pos)):
 
         # check cross
         check_cross_num = 0
+        if cross_num != 0 and len(total_pos[i]) >= cluster_num:
+            cross_num = 0
+
         if len(total_pos[i]) < cluster_num and check_close:
             if check_cross:
                 pass
@@ -460,17 +481,39 @@ for i in range(locate + 1, len(total_pos)):
                 if cross_num == 0:
                     pre_1 = pre_locate[close_place_1]  # 376
                     pre = pre_locate[close_place]  # 363
+
+                    # print("first cross in", i, pre_1, pre)
+
+                # double check if error  or not
+                double_check = []
+                double_check_count = 0
+                for j in total_pos[i]:
+                    dist_list = []
+                    for k in range(0, cluster_num):
+                        dist = abs(pre_locate[k] - j)
+                        dist_list.append(dist)
+                    if min(dist_list) > 20:
+                        pass
+                    else:
+                        place = dist_list.index(min(dist_list))
+                        double_check.append(place)
+                if close_place in double_check:
+                    double_check_count = double_check_count + 1
+                if close_place_1 in double_check:
+                    double_check_count = double_check_count + 1
+                if double_check_count == 2:
+                    # print("Error in ", i)
+                    cross_num = 0
                 else:
-                    pass
-                if pre_1 > pre:
-                    for l in total_pos[i]:
-                        if l in range(pre, pre_1):
-                            check_cross_num = check_cross_num + 1
-                            # check_slope = l
-                else:
-                    for l in total_pos[i]:
-                        if l in range(pre_1, pre):
-                            check_cross_num = check_cross_num + 1
+                    if pre_1 > pre:
+                        for l in total_pos[i]:
+                            if l in range(pre, pre_1):
+                                check_cross_num = check_cross_num + 1
+                                # check_slope = l
+                    else:
+                        for l in total_pos[i]:
+                            if l in range(pre_1, pre):
+                                check_cross_num = check_cross_num + 1
                             # check_slope = l
         if check_cross_num == 1:
             cross_num = cross_num + 1
@@ -482,7 +525,7 @@ for i in range(locate + 1, len(total_pos)):
             #     cross_slope = -1
             #     cross_slope_1 = 1
 
-        if cross_num > 3:
+        if cross_num >= 2:
             if pre > pre_1:
                 # pre_1 = pre_locate[close_place_1]  # 363
                 # pre = pre_locate[close_place]  # 376
@@ -491,9 +534,12 @@ for i in range(locate + 1, len(total_pos)):
             else:
                 cross_slope = 1
                 cross_slope_1 = -1
-            check_cross = True
-            cross_num = 0
-            print("Cross in ", i, close_place, close_place_1)
+            if abs(pre_locate_col[close_place_1] - pre_locate_col[close_place]) > col*0.1:
+                pass
+            else:
+                check_cross = True
+                cross_num = 0
+                print("Cross in ", i, close_place, close_place_1)
         for j in total_pos[i]:
             if count_none > 10:
                 break
@@ -515,6 +561,12 @@ for i in range(locate + 1, len(total_pos)):
                     tempp.pop(place)
                     place1 = abs_temp.index(min(tempp))  # 1
                     pos1 = total_pos[i][place1]  # 407
+                    # Error correct 如果 temp = [-3, 3, 211]，abs後則會有兩相同的值之誤判
+                    if abs(pos - pos1) > row*0.15:
+                        break
+                    if place == place1:
+                        place1 = temp.index(min(tempp))
+                        pos1 = total_pos[i][place1]
                     if pos > pos1:
                         pos_slope = 1
                         pos1_slope = -1
@@ -529,6 +581,8 @@ for i in range(locate + 1, len(total_pos)):
                         if pos_slope < 0:
                             temp_locate[close_place] = total_pos[i][place]
                             temp_locate[close_place_1] = total_pos[i][place1]
+                            pre_locate_col[close_place] = i
+                            pre_locate_col[close_place_1] = i
                             total_cluster[close_place].append(value)
                             total_cluster[close_place_1].append(value1)
                             total_cluster_pos[close_place].append(total_pos[i][place])
@@ -536,6 +590,8 @@ for i in range(locate + 1, len(total_pos)):
                         else:
                             temp_locate[close_place] = total_pos[i][place1]
                             temp_locate[close_place_1] = total_pos[i][place]
+                            pre_locate_col[close_place] = i
+                            pre_locate_col[close_place_1] = i
                             total_cluster[close_place].append(value1)
                             total_cluster[close_place_1].append(value)
                             total_cluster_pos[close_place].append(total_pos[i][place1])
@@ -544,6 +600,8 @@ for i in range(locate + 1, len(total_pos)):
                         if pos_slope > 0:
                             temp_locate[close_place] = total_pos[i][place]
                             temp_locate[close_place_1] = total_pos[i][place1]
+                            pre_locate_col[close_place] = i
+                            pre_locate_col[close_place_1] = i
                             total_cluster[close_place].append(value)
                             total_cluster[close_place_1].append(value1)
                             total_cluster_pos[close_place].append(total_pos[i][place])
@@ -551,6 +609,8 @@ for i in range(locate + 1, len(total_pos)):
                         else:
                             temp_locate[close_place] = total_pos[i][place1]
                             temp_locate[close_place_1] = total_pos[i][place]
+                            pre_locate_col[close_place] = i
+                            pre_locate_col[close_place_1] = i
                             total_cluster[close_place].append(value1)
                             total_cluster[close_place_1].append(value)
                             total_cluster_pos[close_place].append(total_pos[i][place1])
@@ -570,6 +630,7 @@ for i in range(locate + 1, len(total_pos)):
                                             check_list.append(place)
                                             check_count = check_count + 1
                                             temp_locate[place] = j
+                                            pre_locate_col[place] = i
                                             total_cluster[place].append(value)
                                             total_cluster_pos[place].append(j)
                     print("fff", i)
@@ -717,15 +778,15 @@ for i in range(locate + 1, len(total_pos)):
                 dist_list.append(dist)
             for a, element in enumerate(dist_list):
                 if dist_list.index(min(dist_list)) == a:
-                    # if min(dist_list) > 20:
+                    if min(dist_list) > row/30:
                     #     print(pre_locate)
                     #     print("dist>20",i, j)
-                    #     break
+                        break
                     place = a
                     try:
                         try_y = check_list.index(place)
-                        fix = expect_locate(place, i + 1)
-                        fix == None
+                        # fix = expect_locate(place, i + 1)
+                        fix = None
                         if fix == None:
                             pass
                         else:
@@ -735,6 +796,7 @@ for i in range(locate + 1, len(total_pos)):
                             total_cluster_pos[place].pop()
                             total_cluster_pos[place].append(fix)
                             temp_locate[place] = fix
+                            pre_locate_col[place] = i
                     except ValueError:
                         if check_cross:
                             if place == close_place or place == close_place_1:
@@ -742,10 +804,13 @@ for i in range(locate + 1, len(total_pos)):
                         check_list.append(place)
                         check_count = check_count + 1
                         temp_locate[place] = j
+                        pre_locate_col[place] = i
                         total_cluster[place].append(value)
                         total_cluster_pos[place].append(j)
                         break
         for k in range(0, cluster_num):
+            if temp_locate[k] == [""]:
+                temp_locate[k] = pre_locate[k]
             pre_locate[k] = temp_locate[k]
         for l in range(0, cluster_num):
             try:
