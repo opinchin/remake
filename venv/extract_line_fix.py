@@ -211,14 +211,14 @@ img = cv2.imread("C:/Users/Burny/PycharmProjects/remake/venv/output/Grid_removed
 # img = cv2.imread("Grid_removed1.jpg")
 # img = cv2.imread("Grid_removed2.jpg")
 
-thr_value = 0.7
-thr1_value = 0.6
-thr_place = 162
-thr1_place = 244
-x_label_value_1 = 20
-x_label_value_2 = 25
-x_label_place_1 = 271
-x_label_place_2 = 406
+thr_value = 80
+thr1_value = 60
+thr_place = 143
+thr1_place = 215
+x_label_value_1 = 1
+x_label_value_2 = 2
+x_label_place_1 = 54
+x_label_place_2 = 160
 
 [a, b, c] = np.shape(img)  # a=484 b=996,c=3
 row = a

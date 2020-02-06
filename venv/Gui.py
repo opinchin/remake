@@ -920,6 +920,8 @@ def label_define_fun():
 def data_extract_fun():
     img = grid_removed
     [a, b, c] = np.shape(img)  # a=484 b=996,c=3
+    row = a
+    col = b
     kernel = np.ones((5, 5), np.uint8)
     blur = cv2.blur(img, (3, 3))
     opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)  # BGR
@@ -1053,6 +1055,7 @@ def data_extract_fun():
         #                 ones = True
         #                 count = i - (in_which_col - 1)
         #                 break
+
         if in_which_col == len(total_pos):
             return
         for i in range(in_which_col, len(total_pos)):
@@ -1218,10 +1221,8 @@ def data_extract_fun():
             if cross_num >= 2:
                 if pre > pre_1:
                     cross_slope = -1
-                    cross_slope_1 = 1
                 else:
                     cross_slope = 1
-                    cross_slope_1 = -1
                 if abs(pre_locate_col[close_place_1] - pre_locate_col[close_place]) > col * 0.1:
                     pass
                 else:
@@ -1419,7 +1420,8 @@ def data_extract_fun():
         sheet2.write(i, 0, e)
 
     for i in range(0, cluster_num):
-        correct_data(total_cluster[i])
+        Gui_define.correct_data(total_cluster[i])
+        # correct_data(total_cluster[i])
     for k in range(0, cluster_num):
         col = k + 1
         for i, e in enumerate(total_cluster[k]):

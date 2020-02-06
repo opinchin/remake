@@ -523,7 +523,6 @@ def correct_data(cluster):
                             break
 
 
-
 def colordist(rgb_1, rgb_2):
     b_1, g_1, r_1 = rgb_1
     b_2, g_2, r_2 = rgb_2
@@ -544,6 +543,8 @@ def colordist(rgb_1, rgb_2):
     g = g_1 - g_2
     bl = b_1 - b_2
     return np.sqrt((2 + rmean / 256) * (r ** 2) + 4 * (g ** 2) + (2 + (255 - rmean) / 256) * (bl ** 2))
+
+
 
 
 '''
