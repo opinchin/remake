@@ -919,18 +919,19 @@ def label_define_fun():
 
 def data_extract_fun():
     img = grid_removed
+
+    img = cv2.imread("C:/Users/Burny/PycharmProjects/remake/venv/output/Grid_removed.jpg")
     [a, b, c] = np.shape(img)  # a=484 b=996,c=3
     row = a
     col = b
-    kernel = np.ones((5, 5), np.uint8)
+    opening = img
+    kernel = np.ones((7, 7), np.uint8)
     blur = cv2.blur(img, (3, 3))
     opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)  # BGR
-    cv2.imwrite("opening.jpg", opening)
-    # cv2.imwrite("thr",)
+    opening = cv2.dilate(opening, (3, 3))
     gray = cv2.cvtColor(opening, cv2.COLOR_BGR2GRAY)
     ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
-    # cv2.imshow(",",thresh)
-    # cv2.waitKey()
+    cv2.imwrite("thr.jpg", thresh)
     # 各行的紀錄點位置
     total_pos = []
     for i in range(0, b):
@@ -938,12 +939,15 @@ def data_extract_fun():
         for j in range(0, a):  # 每一列
             pos.append(thresh[j, i])
         add_none = []  # 欲添加於Total_pos 之 List
-        try:
-            [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
-            temp = [round((k1[i] + k2[i] - 1) / 2) for i in range(len(k1))]
-            total_pos.append(temp)
-        except UnboundLocalError:
-            total_pos.append(add_none)
+        [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
+        temp = [round((k1[i] + k2[i] - 1) / 2) for i in range(len(k1))]
+        total_pos.append(temp)
+        # try:
+        #     [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
+        #     temp = [round((k1[i] + k2[i] - 1) / 2) for i in range(len(k1))]
+        #     total_pos.append(temp)
+        # except UnboundLocalError:
+        #     total_pos.append(add_none)
     # 若該行紀錄點為空集合，則將其補上None
     for i in range(0, np.size(total_pos)):
         if not total_pos[i]:
@@ -1012,73 +1016,73 @@ def data_extract_fun():
                                        abs((x_label_place_1 - x_label_place_2)) * (x_label_place_1 - loc))
         return np.float(value_)
 
-    def colordist(rgb_1, rgb_2):
-        b_1, g_1, r_1 = rgb_1
-        b_2, g_2, r_2 = rgb_2
-        r_1 = float(r_1)
-        g_1 = float(g_1)
-        b_1 = float(b_1)
-        r_2 = float(r_2)
-        g_2 = float(g_2)
-        b_2 = float(b_2)
-        if abs(b_1-g_1) and abs(g_1 - r_1) and (b_1 - r_1) < 20:
-            avg_1 = (b_1 + g_1 + r_1) / 3
-            avg_2 = (b_2 + g_2 + r_2) / 3
-            gray_1 = np.sqrt((b_1 - avg_1) ** 2 + (g_1 - avg_1) ** 2 + (r_1 - avg_1) ** 2)
-            gray_2 = np.sqrt((b_2 - avg_2) ** 2 + (g_2 - avg_2) ** 2 + (r_2 - avg_2) ** 2)
-            if abs(gray_1 - gray_2) < 3:
-                return 0
-        rmean = (r_1 + r_2) / 2
-        r = r_1 - r_2
-        g = g_1 - g_2
-        bl = b_1 - b_2
-        return np.sqrt((2 + rmean / 256) * (r ** 2) + 4 * (g ** 2) + (2 + (255 - rmean) / 256) * (bl ** 2))
-
-    def labdist(lab_1, lab_2):
-        l_1, a_1, b_1 = lab_1
-        l_2, a_2, b_2 = lab_2
-        return np.sqrt((l_1 - l_2) ** 2 + (a_1 - a_2) ** 2 + (b_1 - b_2) ** 2)
-
-    def expect_locate(in_which_cluster, in_which_col):
-        ones = False
-
-        # for i in range(in_which_col, len(total_pos)):
-        #     if len(total_pos[i]) == cluster_num:
-        #         if ones:
-        #             ones = False
-        #             break
-        #         for j in total_pos[i]:
-        #             color_dist = colordist(pre_color[in_which_cluster], opening[j, i])
-        #             if color_dist < 125 and not ones:
-        #                 end = j
-        #                 end_place = i - 1  # 38
-        #                 ones = True
-        #                 count = i - (in_which_col - 1)
-        #                 break
-
-        if in_which_col == len(total_pos):
-            return
-        for i in range(in_which_col, len(total_pos)):
-            dist = []
-            if i == len(total_pos)-1:
-                return
-            if len(total_pos[i]) == cluster_num:
-                for j in total_pos[i]:
-                    color_dist = colordist(pre_color[in_which_cluster], opening[j, i])
-                    dist.append(color_dist)
-                place = dist.index(min(dist))
-                end = total_pos[i][place]
-                end_place = i - 1
-                count = i - (in_which_col - 1)
-                break
-
-        for i in range(0, count):
-            dist = []
-            dist[:] = [abs(end - x) for x in total_pos[end_place]]
-            place = dist.index(min(dist))  # 1
-            end = total_pos[end_place][place]
-            end_place = end_place - 1
-        return end
+    # def colordist(rgb_1, rgb_2):
+    #     b_1, g_1, r_1 = rgb_1
+    #     b_2, g_2, r_2 = rgb_2
+    #     r_1 = float(r_1)
+    #     g_1 = float(g_1)
+    #     b_1 = float(b_1)
+    #     r_2 = float(r_2)
+    #     g_2 = float(g_2)
+    #     b_2 = float(b_2)
+    #     if abs(b_1-g_1) and abs(g_1 - r_1) and (b_1 - r_1) < 20:
+    #         avg_1 = (b_1 + g_1 + r_1) / 3
+    #         avg_2 = (b_2 + g_2 + r_2) / 3
+    #         gray_1 = np.sqrt((b_1 - avg_1) ** 2 + (g_1 - avg_1) ** 2 + (r_1 - avg_1) ** 2)
+    #         gray_2 = np.sqrt((b_2 - avg_2) ** 2 + (g_2 - avg_2) ** 2 + (r_2 - avg_2) ** 2)
+    #         if abs(gray_1 - gray_2) < 3:
+    #             return 0
+    #     rmean = (r_1 + r_2) / 2
+    #     r = r_1 - r_2
+    #     g = g_1 - g_2
+    #     bl = b_1 - b_2
+    #     return np.sqrt((2 + rmean / 256) * (r ** 2) + 4 * (g ** 2) + (2 + (255 - rmean) / 256) * (bl ** 2))
+    #
+    # def labdist(lab_1, lab_2):
+    #     l_1, a_1, b_1 = lab_1
+    #     l_2, a_2, b_2 = lab_2
+    #     return np.sqrt((l_1 - l_2) ** 2 + (a_1 - a_2) ** 2 + (b_1 - b_2) ** 2)
+    #
+    # def expect_locate(in_which_cluster, in_which_col):
+    #     ones = False
+    #
+    #     # for i in range(in_which_col, len(total_pos)):
+    #     #     if len(total_pos[i]) == cluster_num:
+    #     #         if ones:
+    #     #             ones = False
+    #     #             break
+    #     #         for j in total_pos[i]:
+    #     #             color_dist = colordist(pre_color[in_which_cluster], opening[j, i])
+    #     #             if color_dist < 125 and not ones:
+    #     #                 end = j
+    #     #                 end_place = i - 1  # 38
+    #     #                 ones = True
+    #     #                 count = i - (in_which_col - 1)
+    #     #                 break
+    #
+    #     if in_which_col == len(total_pos):
+    #         return
+    #     for i in range(in_which_col, len(total_pos)):
+    #         dist = []
+    #         if i == len(total_pos)-1:
+    #             return
+    #         if len(total_pos[i]) == cluster_num:
+    #             for j in total_pos[i]:
+    #                 color_dist = colordist(pre_color[in_which_cluster], opening[j, i])
+    #                 dist.append(color_dist)
+    #             place = dist.index(min(dist))
+    #             end = total_pos[i][place]
+    #             end_place = i - 1
+    #             count = i - (in_which_col - 1)
+    #             break
+    #
+    #     for i in range(0, count):
+    #         dist = []
+    #         dist[:] = [abs(end - x) for x in total_pos[end_place]]
+    #         place = dist.index(min(dist))  # 1
+    #         end = total_pos[end_place][place]
+    #         end_place = end_place - 1
+    #     return end
 
     # 將每一行記錄點再次分群，目的是將每一條線條歸類為獨立分群，是為分群對應值，並且對應圖表上的原始資料，可作圖
     for i in range(len(total_pos)):
@@ -1102,14 +1106,15 @@ def data_extract_fun():
                 for j in total_pos[i]:
                     value = place_to_value(j)
                     if not clustered:  # 未歸類初始化，則直接定義參考值。
-                        pre_color[cluster_count - 1] = opening[j, i]
-                        pre_locate[cluster_count - 1] = j
-                        pre_locate_col[cluster_count - 1] = i
-                        total_cluster[cluster_count - 1].append(value)
-                        total_cluster_pos[cluster_count - 1].append(j)
-                        print("已定義類別", cluster_count, "初始位置於", i, "行的", pre_locate[cluster_count - 1], "座標")
-                        cluster_count = cluster_count + 1
-                        locate = i
+                        if len(total_pos[i + 1]) == cluster_num and len(total_pos[i + 2]) == cluster_num:
+                            pre_color[cluster_count - 1] = opening[j, i]
+                            pre_locate[cluster_count - 1] = j
+                            pre_locate_col[cluster_count - 1] = i
+                            total_cluster[cluster_count - 1].append(value)
+                            total_cluster_pos[cluster_count - 1].append(j)
+                            print("已定義類別", cluster_count, "初始位置於", i, "行的", pre_locate[cluster_count - 1], "座標")
+                            cluster_count = cluster_count + 1
+                            locate = i
                     else:  # 已歸類參考點。
                         pass
             elif len(total_pos[i]) < cluster_num:  # 假如該行紀錄點數量小於總分群數
@@ -1140,12 +1145,6 @@ def data_extract_fun():
     for i in range(locate + 1, len(total_pos)):
         value = x_label_to_value(i)
         x_value.append(value)
-        # try:
-        #     value = x_label_to_value(i)
-        #     x_value.append(value)
-        # except:
-        #     pass
-
         # if 太多None再後半段 則視為數據中止
         if total_pos[i] == [None] and i > 4 / 5 * len(total_pos):
             count_none = count_none + 1
@@ -1173,20 +1172,62 @@ def data_extract_fun():
                 if check_close_num == 2:
                     check_close = True
                     close_place_1 = j
+                    # print("Close in ", i, close_place_1, close_place)
                     break
 
             # check cross
             check_cross_num = 0
+            error_cross = False
             if cross_num != 0 and len(total_pos[i]) >= cluster_num:
                 cross_num = 0
 
             if len(total_pos[i]) < cluster_num and check_close:
+
+                pos = []
+                for j in range(0, a):  # 每一列
+                    pos.append(thresh[j, i])
+                [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
+
                 if check_cross:
                     pass
                 else:
                     if cross_num == 0:
                         pre_1 = pre_locate[close_place_1]  # 376
                         pre = pre_locate[close_place]  # 363
+
+                        # 2/15
+                        pos = []
+                        for j in range(0, row):  # 前一列
+                            pos.append(thresh[j, i - 1])
+                        [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
+
+                        pos = []
+                        for j in range(0, row):  # 當前列
+                            pos.append(thresh[j, i])
+                        [k1_, k2_, k3_, k4] = Gui_define.find_total_bound(pos)
+                        temp1 = None
+                        for j in total_pos[i]:
+                            if pre > pre_1:
+                                if j in range(pre_1, pre + 1):
+                                    place = total_pos[i].index(j)
+                                    temp1 = j
+                                    break
+                            else:
+                                if j in range(pre, pre_1 + 1):
+                                    place = total_pos[i].index(j)
+                                    temp1 = j
+                                    break
+                        if temp1 == None:
+                            pass
+                        else:
+                            for j in total_pos[i - 1]:
+                                if abs(temp1 - j) < 5:
+                                    place_ = total_pos[i - 1].index(j)
+                                    # print("誤判為Cross in", i)
+                                    if abs(k3[place_] - k3_[place]) < math.ceil(0.1 * k3_[place]):
+                                        error_cross = True
+                                        print("誤判為Cross in", i)
+                                        break
 
                     # double check if error  or not
                     double_check = []
@@ -1218,6 +1259,9 @@ def data_extract_fun():
                                     check_cross_num = check_cross_num + 1
             if check_cross_num == 1:
                 cross_num = cross_num + 1
+            if error_cross:
+                cross_num = 0
+                # error_cross = False
             if cross_num >= 2:
                 if pre > pre_1:
                     cross_slope = -1

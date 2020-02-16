@@ -301,14 +301,16 @@ def grid_space_detect(image):
 
 
     # 檢查X方向之網格線
-    temp = col / 3
+    temp = col / 4
     # 過濾過低的累加值
     for i in range(0, row):
         if a[i] < temp:
             a[i] = 0
-   # plt.plot(a, b)
-   # plt.gca().invert_yaxis()
-    #plt.show()
+
+    # plt.plot(a)
+    # # plt.plot(a, b)
+    # # plt.gca().invert_yaxis()
+    # plt.show()
     # 配合find_peaks，避免忽略邊界峰值
     aa = list(a)
     a.insert(0, 0)
@@ -354,7 +356,8 @@ def grid_space_detect(image):
 
 
     # 檢查Y方向之網格線
-    temp = row / 3
+    temp = row / 4
+    # temp = row / 3
     # 過濾過低的累加值
     for i in range(0, col):
         if c[i] < temp:

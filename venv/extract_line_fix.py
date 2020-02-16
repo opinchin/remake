@@ -6,6 +6,7 @@ import xlwt
 from tempfile import TemporaryFile
 import scipy.signal
 import pytesseract
+import math
 
 
 def correct_data(cluster):
@@ -213,21 +214,22 @@ img = cv2.imread("C:/Users/Burny/PycharmProjects/remake/venv/output/Grid_removed
 
 thr_value = 80
 thr1_value = 60
-thr_place = 143
-thr1_place = 215
-x_label_value_1 = 1
-x_label_value_2 = 2
-x_label_place_1 = 54
-x_label_place_2 = 160
+thr_place = 160
+thr1_place = 240
+x_label_value_1 = 20
+x_label_value_2 = 30
+x_label_place_1 = 200
+x_label_place_2 = 300
 
-[a, b, c] = np.shape(img)  # a=484 b=996,c=3
+[a, b, c] = np.shape(img)  # a=480 b=996,c=3
 row = a
 col = b
 print("row=", row, "col=", col)
 
 kernel = np.ones((7, 7), np.uint8)
-cross_kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
+cross_kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (7, 7))
 blur = cv2.blur(img, (3, 3))
+# blur = cv2.medianBlur(img, 3)
 opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)  # BGR
 opening = cv2.dilate(opening, (3, 3))
 lab_img = cv2.cvtColor(opening, cv2.COLOR_BGR2LAB)
@@ -323,32 +325,32 @@ def x_label_to_value(place):
     return value
 
 
-def colordist(rgb_1, rgb_2):
-    b_1, g_1, r_1 = rgb_1
-    b_2, g_2, r_2 = rgb_2
-    r_1 = float(r_1)
-    g_1 = float(g_1)
-    b_1 = float(b_1)
-    r_2 = float(r_2)
-    g_2 = float(g_2)
-    b_2 = float(b_2)
-    avg_1 = (b_1 + g_1 + r_1) / 3
-    avg_2 = (b_2 + g_2 + r_2) / 3
-    gray_1 = np.sqrt((b_1 - avg_1) ** 2 + (g_1 - avg_1) ** 2 + (r_1 - avg_1) ** 2)
-    gray_2 = np.sqrt((b_2 - avg_2) ** 2 + (g_2 - avg_2) ** 2 + (r_2 - avg_2) ** 2)
-    if abs(gray_1 - gray_2) < 3:
-        return 0
-    rmean = (r_1 + r_2) / 2
-    r = r_1 - r_2
-    g = g_1 - g_2
-    bl = b_1 - b_2
-    return np.sqrt((2 + rmean / 256) * (r ** 2) + 4 * (g ** 2) + (2 + (255 - rmean) / 256) * (bl ** 2))
-
-
-def labdist(lab_1, lab_2):
-    l_1, a_1, b_1 = lab_1
-    l_2, a_2, b_2 = lab_2
-    return np.sqrt((l_1 - l_2) ** 2 + (a_1 - a_2) ** 2 + (b_1 - b_2) ** 2)
+# def colordist(rgb_1, rgb_2):
+#     b_1, g_1, r_1 = rgb_1
+#     b_2, g_2, r_2 = rgb_2
+#     r_1 = float(r_1)
+#     g_1 = float(g_1)
+#     b_1 = float(b_1)
+#     r_2 = float(r_2)
+#     g_2 = float(g_2)
+#     b_2 = float(b_2)
+#     avg_1 = (b_1 + g_1 + r_1) / 3
+#     avg_2 = (b_2 + g_2 + r_2) / 3
+#     gray_1 = np.sqrt((b_1 - avg_1) ** 2 + (g_1 - avg_1) ** 2 + (r_1 - avg_1) ** 2)
+#     gray_2 = np.sqrt((b_2 - avg_2) ** 2 + (g_2 - avg_2) ** 2 + (r_2 - avg_2) ** 2)
+#     if abs(gray_1 - gray_2) < 3:
+#         return 0
+#     rmean = (r_1 + r_2) / 2
+#     r = r_1 - r_2
+#     g = g_1 - g_2
+#     bl = b_1 - b_2
+#     return np.sqrt((2 + rmean / 256) * (r ** 2) + 4 * (g ** 2) + (2 + (255 - rmean) / 256) * (bl ** 2))
+#
+#
+# def labdist(lab_1, lab_2):
+#     l_1, a_1, b_1 = lab_1
+#     l_2, a_2, b_2 = lab_2
+#     return np.sqrt((l_1 - l_2) ** 2 + (a_1 - a_2) ** 2 + (b_1 - b_2) ** 2)
 
 
 # 將每一行記錄點再次分群，目的是將每一條線條歸類為獨立分群，是為分群對應值，並且對應圖表上的原始資料，可作圖
@@ -401,36 +403,37 @@ for i in range(len(total_pos)):
                     pass
 
 
-def expect_locate(in_which_cluster, in_which_col):
-    ones = False
-    count = 0
-    for i in range(in_which_col, len(total_pos)):
-        count = count+1
-        if len(total_pos[i]) == cluster_num:
-            if ones:
-                ones = False
-                break
-            for j in total_pos[i]:
-                dist = abs(pre_locate[in_which_cluster] - j)
-                if dist < count*10 and not ones:
-                    end = j
-                    end_place = i
-                    ones = True
-                    # print(end, in_which_col - 1, "to", end_place, in_which_cluster)
-                    # count = i - (in_which_col - 1)
-                    break
-    if count > 10:
-        # print(in_which_col)
-        return None
-    for i in range(0, count):
-        dist = []
-        dist[:] = [abs(end - x) for x in total_pos[end_place]]
-        place = dist.index(min(dist))  # 1
-        end = total_pos[end_place][place]
-        end_place = end_place - 1
-    # print(end)
-    return end
-
+# def expect_locate(in_which_cluster, in_which_col):
+#     ones = False
+#     count = 0
+#     for i in range(in_which_col, len(total_pos)):
+#         count = count+1
+#         if len(total_pos[i]) == cluster_num:
+#             if ones:
+#                 ones = False
+#                 break
+#             for j in total_pos[i]:
+#                 dist = abs(pre_locate[in_which_cluster] - j)
+#                 if dist < count*10 and not ones:
+#                     end = j
+#                     end_place = i
+#                     ones = True
+#                     # print(end, in_which_col - 1, "to", end_place, in_which_cluster)
+#                     # count = i - (in_which_col - 1)
+#                     break
+#     if count > 10:
+#         # print(in_which_col)
+#         return None
+#     for i in range(0, count):
+#         dist = []
+#         dist[:] = [abs(end - x) for x in total_pos[end_place]]
+#         place = dist.index(min(dist))  # 1
+#         end = total_pos[end_place][place]
+#         end_place = end_place - 1
+#     # print(end)
+#     return end
+#
+#
 check_cross = False
 count_none = 0
 cross_num = 0
@@ -468,6 +471,7 @@ for i in range(locate + 1, len(total_pos)):
 
         # check cross
         check_cross_num = 0
+        error_cross = False
         if cross_num != 0 and len(total_pos[i]) >= cluster_num:
             cross_num = 0
 
@@ -475,10 +479,43 @@ for i in range(locate + 1, len(total_pos)):
             if check_cross:
                 pass
             else:
-                # check_cross = False
                 if cross_num == 0:
                     pre_1 = pre_locate[close_place_1]  # 376
                     pre = pre_locate[close_place]  # 363
+
+                    error_cross = False
+                    pos = []
+                    for j in range(0, row):  # 前一列
+                        pos.append(thresh[j, i - 1])
+                    [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
+
+                    pos = []
+                    for j in range(0, row):  # 當前列
+                        pos.append(thresh[j, i])
+                    [k1_, k2_, k3_, k4] = Gui_define.find_total_bound(pos)
+                    temp1 = None
+                    for j in total_pos[i]:
+                        if pre > pre_1:
+                            if j in range(pre_1, pre + 1):
+                                place = total_pos[i].index(j)
+                                temp1 = j
+                                break
+                        else:
+                            if j in range(pre, pre_1 + 1):
+                                place = total_pos[i].index(j)
+                                temp1 = j
+                                break
+                    if temp1 == None:
+                        pass
+                    else:
+                        for j in total_pos[i-1]:
+                            if abs(temp1-j) < 5:
+                                place_ = total_pos[i-1].index(j)
+                                # print("誤判為Cross in", i)
+                                if abs(k3[place_] - k3_[place]) < math.ceil(0.1 * k3_[place]):
+                                    error_cross = True
+                                    print("誤判為Cross in", i)
+                                    break
 
                     # print("first cross in", i, pre_1, pre)
 
@@ -513,6 +550,8 @@ for i in range(locate + 1, len(total_pos)):
                             if l in range(pre_1, pre):
                                 check_cross_num = check_cross_num + 1
                             # check_slope = l
+
+
         if check_cross_num == 1:
             cross_num = cross_num + 1
 
@@ -522,7 +561,9 @@ for i in range(locate + 1, len(total_pos)):
             # else:
             #     cross_slope = -1
             #     cross_slope_1 = 1
-
+        if error_cross:
+            cross_num = 0
+            erros_cross = False
         if cross_num >= 2:
             if pre > pre_1:
                 # pre_1 = pre_locate[close_place_1]  # 363
@@ -634,11 +675,6 @@ for i in range(locate + 1, len(total_pos)):
                     print("fff", i)
                     check_cross = False
                     break
-
-
-
-
-
             #         if cross_slope < 0:  # 遞減
             #             expect = float("-inf")
             #             double_check = []
