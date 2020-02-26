@@ -1004,5 +1004,5 @@ for cnt in contours:
     cv2.drawContours(img, cnt, -1, (0, 0, 255), 3)
 
 cv2.imshow("img", img)
-
+cv2.imshow(" ", contours)
 cv2.waitKey()
