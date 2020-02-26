@@ -243,8 +243,17 @@ cv2.imwrite("t.jpg", thresh)
 total_pos = []
 for i in range(0, b):
     pos = []  # 紀錄該行的pixel值
+    k=0
+    test=[]
     for j in range(0, a):  # 每一列
         pos.append(thresh[j, i])
+        test.append(k)
+        k=k+1
+    if i == 0:
+        plt.plot(pos,test)
+    # plt.plot(a, b)
+        plt.gca().invert_yaxis()
+        plt.show()
     add_none = []  # 欲添加於Total_pos 之 List
     [k1, k2, k3, k4] = Gui_define.find_total_bound(pos)
 

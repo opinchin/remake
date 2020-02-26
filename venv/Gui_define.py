@@ -152,9 +152,11 @@ def legend_locate(img):
     origin = img.copy()
     img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
-    _, threshold = cv2.threshold(img, 180, 255, cv2.THRESH_BINARY)
+    _, threshold = cv2.threshold(img, 200, 255, cv2.THRESH_BINARY)
     _, contours, _ = cv2.findContours(threshold, -1, cv2.CHAIN_APPROX_SIMPLE)
-
+    # cv2.imshow("thr", contours)
+    # cv2.imshow("tt", threshold)
+    # cv2.waitKey()
     for cnt in contours:
         if cv2.contourArea(cnt) > 100:
             epsilon = 0.01 * cv2.arcLength(cnt, True)

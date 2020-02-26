@@ -986,20 +986,23 @@ cv2.destroyAllWindows()
 # print("Finsh")
 # '''
 
-img = cv2.imread("C:/Users/Burny/PycharmProjects/remake/venv/output/Grid_removed.jpg")
+img = cv2.imread("C:/Users/Burny/PycharmProjects/remake/venv/4.jpg")
 [a, b, c] = np.shape(img)  # a=484 b=996,c=3
 
-kernel = np.ones((7, 7), np.uint8)
-blur = cv2.blur(img, (3, 3))
-opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)  # BGR
-opening = cv2.dilate(opening, (7, 7))
-gray = cv2.cvtColor(opening, cv2.COLOR_BGR2GRAY)
+rows, cols, channels = img.shape
+mask = np.zeros([rows, cols, 3], dtype=np.uint8)
+origin = img.copy()
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
-cv2.imwrite("thr.jpg", thresh)
 
-image,cnts,hierarchy=cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+image,contours,hierarchy=cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 
-print(np.size(cnts))  #   得到该图中总的轮廓数量
-opening = cv2.drawContours(opening,[cnts[0]],-1,(0,0,0),1)
-cv2.imshow("",opening)
+for cnt in contours:
+    # if cv2.contourArea(cnt) > 10 :
+    #
+    #     cv2.drawContours(img, cnt, -1, (0, 0, 255), 3)
+    cv2.drawContours(img, cnt, -1, (0, 0, 255), 3)
+
+cv2.imshow("img", img)
+
 cv2.waitKey()

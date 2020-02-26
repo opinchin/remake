@@ -46,6 +46,8 @@ def openfile():
         checkgrid_label.set('Not Define Grid')
         checkvalue.config(bg='red')
         checkvalue_label.set("Not Define Value")
+        finish.config(bg='red')
+        finish_label.set("Unfinished")
         data_region_locate.config(state="active")
         data_region_show.config(state="disabled")
         legend_detect.config(state="disabled")
@@ -53,6 +55,8 @@ def openfile():
         legend_removed_show.config(state="disabled")
         grid_detect.config(state="disabled")
         label_detect.config(state="disabled")
+        data_extract.config(state="disabled")
+
 
         cv2.imwrite(os.path.join(save_path, 'Origin.jpg'), origin)
     else:
@@ -1224,7 +1228,7 @@ def data_extract_fun():
                                 if abs(temp1 - j) < 5:
                                     place_ = total_pos[i - 1].index(j)
                                     # print("誤判為Cross in", i)
-                                    if abs(k3[place_] - k3_[place]) < math.ceil(0.1 * k3_[place]):
+                                    if abs(k3[place_] - k3_[place]) <= math.ceil(0.1 * k3_[place]):
                                         error_cross = True
                                         print("誤判為Cross in", i)
                                         break
@@ -1261,7 +1265,7 @@ def data_extract_fun():
                 cross_num = cross_num + 1
             if error_cross:
                 cross_num = 0
-                # error_cross = False
+                error_cross = False
             if cross_num >= 2:
                 if pre > pre_1:
                     cross_slope = -1
@@ -1371,7 +1375,7 @@ def data_extract_fun():
                     dist_list.append(dist)
                 for a, element in enumerate(dist_list):
                     if dist_list.index(min(dist_list)) == a:
-                        if min(dist_list) > row / 30:
+                        if min(dist_list) > row / 20:
                             break
                         place = a
                         try:
@@ -1520,6 +1524,9 @@ def data_extract_fun():
     #     pass
     print("Finish Extracting")
 
+    finish_label.set("Finished")
+    finish.config(bg='green')
+
 
 # ESC KEY
 def escape():
@@ -1535,6 +1542,7 @@ checklegend_label = tkinter.StringVar()
 open_close_text = tkinter.StringVar()
 checkgrid_label = tkinter.StringVar()
 checkvalue_label = tkinter.StringVar()
+finish_label = tkinter.StringVar()
 
 # Check_Label
 var.set('Not Define Data Region')
@@ -1545,6 +1553,9 @@ checkgrid_label.set('Not Define Grid')
 checkgrid = tkinter.Label(main, textvariable=checkgrid_label, bg='red', padx=10, pady=10, width=20)
 checkvalue_label.set('Not Define Label Value')
 checkvalue = tkinter.Label(main, textvariable=checkvalue_label, bg='red', padx=10, pady=10, width=20)
+finish_label.set('Unfinished')
+finish = tkinter.Label(main, textvariable=finish_label, bg='red', padx=10, pady=10, width=20)
+
 # Button
 reopen = tkinter.Button(main, text="Show Origin Image",
                         state="disabled", command=closeimg, width=20, height=1, padx=10, pady=20)
@@ -1598,4 +1609,5 @@ checklabel.grid(row=6, column=4, sticky='w')
 checklegend.grid(row=7, column=4, sticky='w')
 checkgrid.grid(row=8, column=4, sticky='w')
 checkvalue.grid(row=9, column=4, sticky='w')
+finish.grid(row=10 , column=4, sticky='w')
 main.mainloop()
