@@ -986,23 +986,36 @@ cv2.destroyAllWindows()
 # print("Finsh")
 # '''
 
-img = cv2.imread("C:/Users/Burny/PycharmProjects/remake/venv/4.jpg")
+img = cv2.imread("C:/Users/Burny/PycharmProjects/remake/venv/overlap.jpg")
+# img = cv2.imread("C:/Users/Burny/PycharmProjects/remake/venv/4.jpg")
 [a, b, c] = np.shape(img)  # a=484 b=996,c=3
 
 rows, cols, channels = img.shape
 mask = np.zeros([rows, cols, 3], dtype=np.uint8)
 origin = img.copy()
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
 
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+# canny = cv2.Canny(gray, 0, 20)
+ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
+# kernel = np.ones((3, 3), np.uint8)
+# # thresh = cv2.medianBlur(thresh, 3)
+# thresh = cv2.blur(thresh, (5, 5))
+# thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)  # BGR
+# cv2.imshow("t",canny)
 image,contours,hierarchy=cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 
 for cnt in contours:
-    # if cv2.contourArea(cnt) > 10 :
-    #
-    #     cv2.drawContours(img, cnt, -1, (0, 0, 255), 3)
-    cv2.drawContours(img, cnt, -1, (0, 0, 255), 3)
+    if cv2.contourArea(cnt) > 100:
+        epsilon = 0.01 * cv2.arcLength(cnt, True)
+        approx = cv2.approxPolyDP(cnt, epsilon, False)
+        # 確認是否為正立四邊形且不能為最外圍之邊框
+        if len(approx) == 4:
+            cv2.drawContours(img, cnt, -1, (0, 0, 255), 3)
+            legend = origin[approx[0][0][1]:approx[1][0][1], approx[0][0][0]:approx[2][0][0]]
+            cv2.imshow("l",legend)
+            cv2.waitKey()
+    # cv2.drawContours(img, cnt, -1, (0, 0, 255), 2)
 
 cv2.imshow("img", img)
-cv2.imshow(" ", contours)
+# cv2.imshow(" ", contours)
 cv2.waitKey()

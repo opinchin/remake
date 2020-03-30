@@ -530,7 +530,7 @@ def label_define_fun():
                 check_value.append(k)
                 # check_place.append(y)
                 check_place.append(round((y + h / 2)))
-                cv2.rectangle(y_label_fix, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                # cv2.rectangle(y_label_fix, (x, y), (x + w, y + h), (0, 0, 255), 2)
                 # print(k, "=", x, y, w, h)
             except ValueError:
                 pass
@@ -929,10 +929,14 @@ def data_extract_fun():
     row = a
     col = b
     opening = img
-    kernel = np.ones((7, 7), np.uint8)
-    blur = cv2.blur(img, (3, 3))
-    opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)  # BGR
-    opening = cv2.dilate(opening, (3, 3))
+    if grid_x and grid_y != None:
+
+        kernel = np.ones((7, 7), np.uint8)
+        blur = cv2.blur(img, (3, 3))
+        opening = cv2.morphologyEx(blur, cv2.MORPH_OPEN, kernel)  # BGR
+        opening = cv2.dilate(opening, (3, 3))
+    else:
+        pass
     gray = cv2.cvtColor(opening, cv2.COLOR_BGR2GRAY)
     ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
     cv2.imwrite("thr.jpg", thresh)

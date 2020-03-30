@@ -163,9 +163,9 @@ def legend_locate(img):
             approx = cv2.approxPolyDP(cnt, epsilon, False)
             # 確認是否為正立四邊形且不能為最外圍之邊框
             if len(approx) == 4:
-                if abs(approx[0][0][0] - approx[1][0][0]) < 2 and abs(
-                        approx[2][0][0] - approx[3][0][0] < 2 and abs(approx[0][0][1] - approx[3][0][1]) < 2
-                        and abs(approx[1][0][1] - approx[2][0][1]) < 2 and not abs(
+                if abs(approx[0][0][0] - approx[1][0][0]) < 0.005*cols and abs(
+                        approx[2][0][0] - approx[3][0][0] < 0.005*cols and abs(approx[0][0][1] - approx[3][0][1]) < 0.005*rows
+                        and abs(approx[1][0][1] - approx[2][0][1]) < 0.005*rows and not abs(
                             approx[0][0][0] - approx[2][0][0]) > 0.8 * cols):
                     # 確認是否有非圖例之誤偵測
                     temp = threshold[approx[0][0][1]:approx[1][0][1], approx[0][0][0]:approx[2][0][0]]
@@ -256,37 +256,42 @@ def legend_text_detect(image):
         print("共有", legend_num, "種圖例")
     else:
         print("預測有同列的圖例,一列應有", count, "個圖例")
-        for i in range(0, len(k1)):
-            if i == 0:
-                temp = round((k1[i + 1] + k2[i]) / 2)
-                new_range_1.append(round(k1[i] / 2))
-                new_range_2.append(temp)
-            elif i + 1 == len(k1):
-                new_range_1.append(temp)
-                new_range_2.append(len(c))
-            else:
-                new_range_1.append(temp)
-                temp = round((k2[i] + k1[i + 1]) / 2)
-                new_range_2.append(temp)
-        for i in range(0, len(k1)):
-            for j in range(0, count):
-                if j + 1 >= len(extra_legend_locate):
-                    text = pytesseract.image_to_string(
-                        thr[new_range_1[i]:new_range_2[i], k4[extra_legend_locate[j]]:k4[len(k4) - 1]],
-                        lang='engB',
-                        config='--psm 6 --oem 1')
-                    if text != None:
-                        print(text)
-                        legend_num = legend_num + 1
+        try:
+            for i in range(0, len(k1)):
+                if i == 0:
+                    temp = round((k1[i + 1] + k2[i]) / 2)
+                    new_range_1.append(round(k1[i] / 2))
+                    new_range_2.append(temp)
+                elif i + 1 == len(k1):
+                    new_range_1.append(temp)
+                    new_range_2.append(len(c))
                 else:
-                    text = pytesseract.image_to_string(
-                        thr[new_range_1[i]:new_range_2[i], k4[extra_legend_locate[j]]:k3[extra_legend_locate[j + 1]]],
-                        lang='engB',
-                        config='--psm 6 --oem 1')
-                    if text != None:
-                        print(text)
-                        legend_num = legend_num + 1
-        print("共有", legend_num, "種圖例")
+                    new_range_1.append(temp)
+                    temp = round((k2[i] + k1[i + 1]) / 2)
+                    new_range_2.append(temp)
+            for i in range(0, len(k1)):
+                for j in range(0, count):
+                    if j + 1 >= len(extra_legend_locate):
+                        text = pytesseract.image_to_string(
+                            thr[new_range_1[i]:new_range_2[i], k4[extra_legend_locate[j]]:k4[len(k4) - 1]],
+                            lang='engB',
+                            config='--psm 6 --oem 1')
+                        if text != None:
+                            print(text)
+                            legend_num = legend_num + 1
+                    else:
+                        text = pytesseract.image_to_string(
+                            thr[new_range_1[i]:new_range_2[i], k4[extra_legend_locate[j]]:k3[extra_legend_locate[j + 1]]],
+                            lang='engB',
+                            config='--psm 6 --oem 1')
+                        if text != None:
+                            print(text)
+                            legend_num = legend_num + 1
+            print("共有", legend_num, "種圖例")
+
+
+        except:
+            pass
 
 
 def grid_space_detect(image):
