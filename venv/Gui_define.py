@@ -289,7 +289,6 @@ def legend_text_detect(image):
                             legend_num = legend_num + 1
             print("共有", legend_num, "種圖例")
 
-
         except:
             pass
 
