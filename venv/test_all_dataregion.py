@@ -108,7 +108,7 @@ def label_define_fun(left, right, down, up, img):
             check_value.append(k)
             check_place.append(round((y + h / 2)))
             cv2.rectangle(y_label_show, (x, y), (x + w, y + h), (0, 0, 255), 2)
-            pass
+            
         except ValueError:
             pass
 
