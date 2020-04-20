@@ -1002,20 +1002,27 @@ ret, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
 # thresh = cv2.blur(thresh, (5, 5))
 # thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)  # BGR
 # cv2.imshow("t",canny)
-image,contours,hierarchy=cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+# image,contours,hierarchy=cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+#
+# for cnt in contours:
+#     if cv2.contourArea(cnt) > 100:
+#         epsilon = 0.01 * cv2.arcLength(cnt, True)
+#         approx = cv2.approxPolyDP(cnt, epsilon, False)
+#         # 確認是否為正立四邊形且不能為最外圍之邊框
+#         if len(approx) == 4:
+#             cv2.drawContours(img, cnt, -1, (0, 0, 255), 3)
+#             legend = origin[approx[0][0][1]:approx[1][0][1], approx[0][0][0]:approx[2][0][0]]
+#             cv2.imshow("l",legend)
+#             cv2.waitKey()
+#     # cv2.drawContours(img, cnt, -1, (0, 0, 255), 2)
+#
+# cv2.imshow("img", img)
+# # cv2.imshow(" ", contours)
+# cv2.waitKey()
 
-for cnt in contours:
-    if cv2.contourArea(cnt) > 100:
-        epsilon = 0.01 * cv2.arcLength(cnt, True)
-        approx = cv2.approxPolyDP(cnt, epsilon, False)
-        # 確認是否為正立四邊形且不能為最外圍之邊框
-        if len(approx) == 4:
-            cv2.drawContours(img, cnt, -1, (0, 0, 255), 3)
-            legend = origin[approx[0][0][1]:approx[1][0][1], approx[0][0][0]:approx[2][0][0]]
-            cv2.imshow("l",legend)
-            cv2.waitKey()
-    # cv2.drawContours(img, cnt, -1, (0, 0, 255), 2)
-
-cv2.imshow("img", img)
-# cv2.imshow(" ", contours)
-cv2.waitKey()
+# img = cv2.imread("food.jpg")
+# bgr = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
+# print(np.shape(bgr))
+# cv2.imshow("RGB",img)
+# cv2.imshow("BGR",bgr)
+# cv2.waitKey()
