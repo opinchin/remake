@@ -177,17 +177,69 @@ def label_define_fun(left, right, down, up, img):
             # print("Label_Place =", check_origin)
             # print("Label_Check =",check_origin)
             # Value/Place後比較各組比例是否一致
+            checked = None
             for j in set(check):
                 if check.count(j) >= 2:
                     # print("Label Define")
+                    checked = j
+                    origin_checked = check_place_dist.index(0)
                     find_or_not = True
                     thr_value = i
                     thr_place = check_place[check_value.index(i)]
                     thr1_value = check_value[check.index(j)]
                     thr1_place = check_place[check.index(j)]
                     break
-        print("Y1 =", thr_place)
-        print("Y2 =", thr1_place)
+        # print("Y1 =", thr_place)
+        # print("Y2 =", thr1_place)
+        # 如果有找到即可推算原Label。
+        # 找到符合條件之原Value之序列
+        all_checked_value_queue = []
+        if checked != None:
+            all_checked_value_queue.append(origin_checked)
+            for i in range(0, len(check)):
+                if check[i] == checked:
+                    all_checked_value_queue.append(i)
+            find_dist = []
+            for i in range(0, len(all_checked_value_queue)):
+                if i + 1 < len(all_checked_value_queue):
+                    p0 = all_checked_value_queue[i]
+                    p1 = all_checked_value_queue[i + 1]
+                    dist = Decimal(str(check_value[p1])) - Decimal(str(check_value[p0]))
+                    find_dist.append(dist)
+            # 找到公差
+            max_count = 0
+            for i in set(find_dist):
+                count = find_dist.count(i)
+                if max_count < count:
+                    max_count = count
+                    value_dist = i
+            # 預估 座標DIST
+            place = find_dist.index(value_dist)
+            place_dist = check_place[place + 1] - check_place[place]
+            # 根據公差 返測原LABEL
+            start = Decimal(str(check_value[min(all_checked_value_queue)]))
+            end = Decimal(str(check_value[max(all_checked_value_queue)]))
+            expect_value = []
+            expect_place = []
+            now_value = start
+            now_place = check_place[min(all_checked_value_queue)]
+            expect_value.append(now_value)
+            expect_place.append(now_place)
+            temp = []
+            temp[:] = [Decimal(str(x)) for x in check_value]
+            while (now_value > end):
+                now_value = now_value + value_dist
+                expect_value.append(now_value)
+                # if
+                try:
+                    place = temp.index(now_value)
+                    expect_place.append(check_place[place])
+                    now_place = check_place[place]
+                except:
+                    now_place = now_place + place_dist
+                    expect_place.append(now_place)
+            print("Expect_Value =", expect_value)
+            print("Expect_Place =", expect_place)
 
         if thr_place != None:
             # 修正位置
@@ -259,16 +311,81 @@ def label_define_fun(left, right, down, up, img):
                     check[j] = temp
             # Value/Place後比較各組比例是否一致
             for j in set(check):
+                checked = None
                 if check.count(j) >= 2:
-                    # print("Label Define")
+                    checked = j
+                    origin_checked = check_place_dist.index(0)
+                    print("Label Define")
                     find_or_not = True
                     thr_value = i
                     thr_place = check_place[check_value.index(i)]
                     thr1_value = check_value[check.index(j)]
                     thr1_place = check_place[check.index(j)]
                     break
-            print("X1 =", thr_place)
-            print("X2 =", thr1_place)
+            # print("X1 =", thr_place)
+            # print("X2 =", thr1_place)
+
+
+        # 如果有找到即可推算原Label。
+        # 找到符合條件之原Value之序列
+        all_checked_value_queue = []
+        if checked != None:
+            all_checked_value_queue.append(origin_checked)
+            for i in range(0, len(check)):
+                if check[i] == checked:
+                    all_checked_value_queue.append(i)
+            find_dist = []
+            for i in range(0, len(all_checked_value_queue)):
+                if i + 1 < len(all_checked_value_queue):
+                    p0 = all_checked_value_queue[i]
+                    p1 = all_checked_value_queue[i+1]
+                    dist = check_value[p1] - check_value[p0]
+
+                    dist = Decimal(str(check_value[p1])) - Decimal(str(check_value[p0]))
+                    find_dist.append(dist)
+            # 找到公差
+            max_count = 0
+            for i in set(find_dist):
+                count = find_dist.count(i)
+                if max_count < count:
+                    max_count = count
+                    value_dist = i
+            # 預估 座標DIST
+            place = find_dist.index(value_dist)
+            place_dist = check_place[place+1] - check_place[place]
+            # 根據公差 返測原LABEL
+            start = Decimal(str(check_value[min(all_checked_value_queue)]))
+            end = Decimal(str(check_value[max(all_checked_value_queue)]))
+            expect_value = []
+            expect_place = []
+            now_value = start
+            now_place = check_place[min(all_checked_value_queue)]
+            expect_value.append(now_value)
+            expect_place.append(now_place)
+            temp = []
+            temp[:] = [Decimal(str(x)) for x in check_value]
+            while(now_value < end):
+                now_value = now_value + value_dist
+                expect_value.append(now_value)
+                # if
+                try:
+                    place = temp.index(now_value)
+                    expect_place.append(check_place[place])
+                    now_place = check_place[place]
+                except:
+                    now_place = now_place + place_dist
+                    expect_place.append(now_place)
+
+            print("Expect_Value =", expect_value)
+            print("Expect_Place =", expect_place)
+            show = np.zeros((len(expect_value)*30, 512), 3, np.uint8)
+            show.fill(255)
+
+            cv2.putText(show, 'Hello', (500, len(expect_value)*30),_ , 4, (255, 0, 255), 2)
+            cv2.imshow("rr",show)
+            cv2.waitKey()
+                # print(start)
+
         if thr_place != None:
             # 修正位置
             thr1_place = thr1_place - leftbound
@@ -284,8 +401,8 @@ def label_define_fun(left, right, down, up, img):
             x_label_value_1 = thr_value
             x_label_place_2 = thr1_place
             x_label_value_2 = thr1_value
-            print("Xref1 =", thr_place)
-            print("Xref2 =", thr1_place)
+            # print("Xref1 =", thr_place)
+            # print("Xref2 =", thr1_place)
             print("X軸Label參考點一:位於", x_label_place_1, "Value = ", x_label_value_1)
             print("X軸Label參考點二:位於", x_label_place_2, "Value = ", x_label_value_2)
         else:
@@ -323,7 +440,7 @@ name = 100
 #     print(i)
 # Single Test
 i = "1 (15).JPG"
-# i = "1 (20).jpg"
+i = "1 (20).jpg"
 dataregion_detect(i)
 cv2.imwrite("origin.jpg", origin)
 cv2.imwrite("dataregion.jpg", image_data)
